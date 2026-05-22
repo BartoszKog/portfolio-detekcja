@@ -1,13 +1,18 @@
 <!doctype html>
-<html lang="en">
+<html lang="pl">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>portfolio-detekcja</title>
+    <title>Wykrywanie Pojazdów - Kraków</title>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app" class="w-screen h-screen relative overflow-hidden">
+      <div id="map" class="absolute inset-0 w-full h-full"></div>
+      <div class="absolute z-10 top-4 left-4 bg-white/90 backdrop-blur-sm shadow-lg rounded-lg p-4">
+        <h1 class="text-xl font-bold text-slate-800">Wykrywanie Pojazdów - Kraków</h1>
+      </div>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

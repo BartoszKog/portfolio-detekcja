@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Cursor (local AI rules — not shared via Git)
+.cursor/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
