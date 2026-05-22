@@ -16,7 +16,7 @@ export interface MapControllerConfig {
 type OrthoYear = '2023' | '2025';
 
 const KRAKOW_CENTER: [number, number] = [19.9449, 50.0646];
-const INITIAL_ZOOM = 13;
+const INITIAL_ZOOM = 14.5;
 const EPSG_2178 = 'EPSG:2178';
 const EPSG_2178_PROJ =
   '+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=7500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
@@ -171,7 +171,7 @@ export class MapController {
       view: new View({
         center: fromLonLat(KRAKOW_CENTER),
         zoom: INITIAL_ZOOM,
-        maxZoom: 21,
+        minZoom: INITIAL_ZOOM,
       }),
     });
 
