@@ -1,0 +1,68 @@
+---
+description: Core standards for the aerial vehicle detection map (Vite, TypeScript, Tailwind, OpenLayers)
+globs: src/**/*.{ts,tsx,css,html}, index.html, public/**/*
+alwaysApply: false
+---
+
+# Portfolio Detekcja — Project Standards
+
+Interactive web map for a deep learning engineering thesis on aerial vehicle detection.
+
+**Stack:** Vite, TypeScript, Tailwind CSS, OpenLayers, Proj4
+
+## 1. Language Requirements
+
+| Context | Language |
+|---------|----------|
+| User prompts & agent instructions | English |
+| Code: variables, functions, comments | English |
+| UI visible in the browser (HTML, buttons, map popups) | Polish |
+
+```typescript
+// ✅ GOOD
+/** Converts WGS84 coordinates to the map's projected CRS. */
+function toMapCoordinates(lng: number, lat: number): [number, number] { ... }
+
+const popupContent = `<p>Wykryto pojazd</p>`; // Polish UI text
+```
+
+## 2. Modular Architecture
+
+Do not put all logic in `main.ts`. `main.ts` is the entry point only — import and initialize modules.
+
+```
+src/
+  map/    # OpenLayers init, layers, sources, projections, geospatial logic
+  ui/     # DOM components, controls, event listeners
+  utils/  # Shared helpers
+```
+
+## 3. TypeScript
+
+- Strict TypeScript; never use `any`.
+- Explicit return types on functions.
+- Define interfaces/types for geospatial data, OpenLayers objects, projections, and configuration.
+
+```typescript
+// ❌ BAD
+function addLayer(map, data) { ... }
+
+// ✅ GOOD
+interface DetectionFeature {
+  id: string;
+  coordinates: [number, number];
+  confidence: number;
+}
+
+function addDetectionLayer(map: Map, features: DetectionFeature[]): void { ... }
+```
+
+## 4. Styling
+
+- Use Tailwind utility classes in DOM elements or TypeScript DOM creation.
+- Avoid custom CSS in `style.css` unless required for third-party overrides (e.g. OpenLayers controls) or complex animations.
+
+## 5. Clean Code
+
+- Write concise, self-documenting code.
+- Add brief JSDoc on complex functions, especially geospatial transformations and spatial data logic.

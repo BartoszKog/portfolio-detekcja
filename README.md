@@ -8,6 +8,6 @@ Repozytorium stanowi interaktywną wizytówkę pracy dyplomowej. Projekt prezent
 
 ## Stack Technologiczny
 * **Machine Learning & GIS:** YOLO11 (OBB), TensorRT (FP16), SAHI, Python, QGIS
-* **Frontend:** Vite, TypeScript, Tailwind CSS, MapLibre GL JS
+* **Frontend:** Vite, TypeScript, Tailwind CSS, OpenLayers, Proj4
 
 *Projekt jest w trakcie wdrażania wyników badawczych do formy interaktywnej strony statycznej.*
