@@ -1,25 +1,33 @@
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
+import VectorLayer from 'ol/layer/Vector';
 import { fromLonLat, get as getProjection, transformExtent } from 'ol/proj';
-import { register } from 'ol/proj/proj4';
+import VectorSource from 'ol/source/Vector';
 import WMTSTileGrid from 'ol/tilegrid/WMTS';
 import WMTS from 'ol/source/WMTS';
 import XYZ from 'ol/source/XYZ';
-import proj4 from 'proj4';
+import CircleStyle from 'ol/style/Circle';
+import Fill from 'ol/style/Fill';
+import Stroke from 'ol/style/Stroke';
+import Style from 'ol/style/Style';
+import {
+  createDetectionSource,
+  EPSG_2178,
+  registerDetectionProjections,
+  type OrthoYear,
+} from './detectionCoordinates';
+
+export type { OrthoYear } from './detectionCoordinates';
 
 export interface MapControllerConfig {
   container: string | HTMLElement;
   onLoad?: () => void;
 }
 
-type OrthoYear = '2023' | '2025';
-
 const KRAKOW_CENTER: [number, number] = [19.9449, 50.0646];
 const INITIAL_ZOOM = 14.5;
-const EPSG_2178 = 'EPSG:2178';
-const EPSG_2178_PROJ =
-  '+proj=tmerc +lat_0=0 +lon_0=21 +k=0.999923 +x_0=7500000 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
+const DETECTION_MIN_ZOOM = 16;
 const MSIP_ATTRIBUTION = '© MSIP Kraków';
 const CARTO_ATTRIBUTION = '© OpenStreetMap contributors © CARTO';
 const MSIP_TILE_MATRIX_SET = 'default028mm';
@@ -67,11 +75,30 @@ const ORTHO_LAYER_CONFIGS: readonly OrthoLayerConfig[] = [
   },
 ] as const;
 
+interface DetectionLayerConfig {
+  year: OrthoYear;
+  url: string;
+  visible: boolean;
+}
+
+const DETECTION_LAYER_CONFIGS: readonly DetectionLayerConfig[] = [
+  {
+    year: '2023',
+    url: './data/detections_2023.geojson',
+    visible: false,
+  },
+  {
+    year: '2025',
+    url: './data/detections_2025.geojson',
+    visible: true,
+  },
+] as const;
+
 let mapInstance: Map | null = null;
 const orthoLayers = new globalThis.Map<OrthoYear, TileLayer<WMTS>>();
+const detectionLayers = new globalThis.Map<OrthoYear, VectorLayer<VectorSource>>();
 
-proj4.defs(EPSG_2178, EPSG_2178_PROJ);
-register(proj4);
+registerDetectionProjections();
 
 const projection2178 = getProjection(EPSG_2178);
 if (!projection2178) {
@@ -88,17 +115,23 @@ const msipTileGrid = new WMTSTileGrid({
   tileSize: MSIP_TILE_SIZE,
 });
 
-/** Shows one orthophoto year and hides the other. */
+/** Shows one orthophoto year and its detections while hiding the other year. */
 export function toggleLayer(year: OrthoYear): void {
   for (const [layerYear, layer] of orthoLayers) {
+    layer.setVisible(layerYear === year);
+  }
+  for (const [layerYear, layer] of detectionLayers) {
     layer.setVisible(layerYear === year);
   }
   mapInstance?.render();
 }
 
-/** Hides both MSIP orthophoto layers so only the basemap remains visible. */
+/** Hides both MSIP orthophoto and detection layers so only the basemap remains visible. */
 export function hideOrthophotoLayers(): void {
   for (const layer of orthoLayers.values()) {
+    layer.setVisible(false);
+  }
+  for (const layer of detectionLayers.values()) {
     layer.setVisible(false);
   }
   mapInstance?.render();
@@ -157,6 +190,42 @@ function createOrthophotoLayer(config: OrthoLayerConfig): TileLayer<WMTS> {
   return layer;
 }
 
+const DETECTION_STYLES: Record<OrthoYear, { fill: string; stroke: string }> = {
+  '2023': {
+    fill: 'rgba(59, 130, 246, 0.85)',
+    stroke: '#ffffff',
+  },
+  '2025': {
+    fill: 'rgba(239, 68, 68, 0.85)',
+    stroke: '#ffffff',
+  },
+};
+
+function createDetectionStyle(year: OrthoYear): Style {
+  const colors = DETECTION_STYLES[year];
+
+  return new Style({
+    image: new CircleStyle({
+      radius: 4,
+      fill: new Fill({ color: colors.fill }),
+      stroke: new Stroke({ color: colors.stroke, width: 1.5 }),
+    }),
+  });
+}
+
+function createDetectionLayer(config: DetectionLayerConfig): VectorLayer<VectorSource> {
+  const layer = new VectorLayer({
+    source: createDetectionSource(config.url),
+    style: createDetectionStyle(config.year),
+    visible: config.visible,
+    minZoom: DETECTION_MIN_ZOOM,
+    zIndex: 10,
+  });
+
+  detectionLayers.set(config.year, layer);
+  return layer;
+}
+
 /** Initializes and manages the OpenLayers map instance. */
 export class MapController {
   private readonly map: Map;
@@ -167,6 +236,7 @@ export class MapController {
       layers: [
         createBasemapLayer(),
         ...ORTHO_LAYER_CONFIGS.map((layerConfig) => createOrthophotoLayer(layerConfig)),
+        ...DETECTION_LAYER_CONFIGS.map((layerConfig) => createDetectionLayer(layerConfig)),
       ],
       view: new View({
         center: fromLonLat(KRAKOW_CENTER),
