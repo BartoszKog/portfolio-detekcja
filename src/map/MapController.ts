@@ -20,6 +20,8 @@ import {
 
 export type { OrthoYear } from './detectionCoordinates';
 
+export type LayerMode = OrthoYear | 'diff';
+
 export interface MapControllerConfig {
   container: string | HTMLElement;
   onLoad?: () => void;
@@ -94,7 +96,11 @@ const DETECTION_LAYER_CONFIGS: readonly DetectionLayerConfig[] = [
   },
 ] as const;
 
+const DIFF_HEATMAP_TILE_URL = './tiles/diff_2025_2023/{z}/{x}/{y}.png';
+const DIFF_HEATMAP_Z_INDEX = 5;
+
 let mapInstance: Map | null = null;
+let diffHeatmapLayer: TileLayer<XYZ> | null = null;
 const orthoLayers = new globalThis.Map<OrthoYear, TileLayer<WMTS>>();
 const detectionLayers = new globalThis.Map<OrthoYear, VectorLayer<VectorSource>>();
 
@@ -115,25 +121,21 @@ const msipTileGrid = new WMTSTileGrid({
   tileSize: MSIP_TILE_SIZE,
 });
 
-/** Shows one orthophoto year and its detections while hiding the other year. */
-export function toggleLayer(year: OrthoYear): void {
+/** Activates one layer mode: orthophoto year (A/B) or difference heatmap (C). */
+export function toggleLayer(mode: LayerMode): void {
   for (const [layerYear, layer] of orthoLayers) {
-    layer.setVisible(layerYear === year);
+    layer.setVisible(mode === layerYear);
   }
   for (const [layerYear, layer] of detectionLayers) {
-    layer.setVisible(layerYear === year);
+    layer.setVisible(mode === layerYear);
   }
+  diffHeatmapLayer?.setVisible(mode === 'diff');
   mapInstance?.render();
 }
 
-/** Hides both MSIP orthophoto and detection layers so only the basemap remains visible. */
-export function hideOrthophotoLayers(): void {
-  for (const layer of orthoLayers.values()) {
-    layer.setVisible(false);
-  }
-  for (const layer of detectionLayers.values()) {
-    layer.setVisible(false);
-  }
+/** Toggles difference heatmap visibility without changing the active layer mode. */
+export function setDiffHeatmapVisible(visible: boolean): void {
+  diffHeatmapLayer?.setVisible(visible);
   mapInstance?.render();
 }
 
@@ -163,6 +165,20 @@ function createBasemapLayer(): TileLayer<XYZ> {
       maxZoom: 20,
     }),
   });
+}
+
+function createDiffHeatmapLayer(): TileLayer<XYZ> {
+  const layer = new TileLayer({
+    source: new XYZ({
+      url: DIFF_HEATMAP_TILE_URL,
+      crossOrigin: 'anonymous',
+    }),
+    visible: false,
+    zIndex: DIFF_HEATMAP_Z_INDEX,
+  });
+
+  diffHeatmapLayer = layer;
+  return layer;
 }
 
 function createOrthophotoLayer(config: OrthoLayerConfig): TileLayer<WMTS> {
@@ -236,6 +252,7 @@ export class MapController {
       layers: [
         createBasemapLayer(),
         ...ORTHO_LAYER_CONFIGS.map((layerConfig) => createOrthophotoLayer(layerConfig)),
+        createDiffHeatmapLayer(),
         ...DETECTION_LAYER_CONFIGS.map((layerConfig) => createDetectionLayer(layerConfig)),
       ],
       view: new View({
