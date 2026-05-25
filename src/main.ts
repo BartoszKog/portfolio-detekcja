@@ -1,5 +1,6 @@
 import './style.css';
 import { MapController } from './map/MapController';
+import { setupLegend } from './ui/Legend';
 import { setupLayerToggle } from './ui/LayerToggle';
 
 /**
@@ -9,6 +10,11 @@ import { setupLayerToggle } from './ui/LayerToggle';
 new MapController({
   container: 'map',
   onLoad: () => {
+    const app = document.querySelector<HTMLElement>('#app');
+    if (app) {
+      setupLegend(app);
+    }
+
     const panel = document.querySelector<HTMLElement>('#ui-panel');
     if (panel) {
       setupLayerToggle(panel);

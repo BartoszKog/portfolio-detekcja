@@ -2,6 +2,7 @@ import {
   setDiffHeatmapVisible,
   toggleLayer,
 } from '../map/MapController';
+import { toggleLegendVisibility } from './Legend';
 
 type LayerSelection = '2023' | '2025' | 'diff';
 
@@ -56,6 +57,7 @@ function applyLayerSelection(
 
   const isDiffMode = activeSelection === 'diff';
   controls.kdeCheckboxWrapper.classList.toggle('hidden', !isDiffMode);
+  toggleLegendVisibility(isDiffMode);
 
   if (isDiffMode) {
     controls.kdeCheckbox.checked = true;
