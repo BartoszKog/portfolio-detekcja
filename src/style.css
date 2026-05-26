@@ -70,3 +70,32 @@ body {
 .map-scale-line-bar::after {
   right: 0;
 }
+
+.ol-attribution {
+  max-width: calc(100% - 2rem);
+  border-radius: 0.5rem;
+  background: rgb(255 255 255 / 0.85);
+}
+
+.ol-attribution:not(.ol-uncollapsible) button {
+  display: none;
+}
+
+.ol-attribution ul {
+  display: block;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.6875rem;
+  line-height: 1.35;
+  color: rgb(51 65 85);
+  text-shadow: none;
+}
+
+.ol-attribution a {
+  color: rgb(37 99 235);
+  text-decoration: underline;
+}
+
+.ol-attribution a:hover {
+  color: rgb(29 78 216);
+}

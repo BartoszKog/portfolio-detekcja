@@ -1,3 +1,4 @@
+import { defaults as defaultControls } from 'ol/control/defaults.js';
 import Map from 'ol/Map';
 import View from 'ol/View';
 import TileLayer from 'ol/layer/Tile';
@@ -36,8 +37,10 @@ export interface MapControllerConfig {
 
 const KRAKOW_CENTER: [number, number] = [19.9449, 50.0646];
 const INITIAL_ZOOM = 14.5;
-const MSIP_ATTRIBUTION = '© MSIP Kraków';
-const CARTO_ATTRIBUTION = '© OpenStreetMap contributors © CARTO';
+const MSIP_ATTRIBUTION =
+  '© <a href="https://msip.krakow.pl/" target="_blank" rel="noopener noreferrer">MSIP Kraków</a>';
+const CARTO_ATTRIBUTION =
+  '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OSM contributors</a> © <a href="https://carto.com/" target="_blank" rel="noopener noreferrer">CARTO</a>';
 const MSIP_TILE_MATRIX_SET = 'default028mm';
 const MSIP_TILE_ORIGIN: [number, number] = [1877300, 10001300];
 const MSIP_TILE_SIZE = 512;
@@ -308,6 +311,12 @@ export class MapController {
   constructor(config: MapControllerConfig) {
     this.map = new Map({
       target: config.container,
+      controls: defaultControls({
+        attributionOptions: {
+          collapsible: false,
+          collapsed: false,
+        },
+      }),
       layers: [
         createBasemapLayer(),
         ...ORTHO_LAYER_CONFIGS.map((layerConfig) => createOrthophotoLayer(layerConfig)),
