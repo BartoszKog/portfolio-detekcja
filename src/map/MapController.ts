@@ -14,9 +14,12 @@ import Style from 'ol/style/Style';
 import {
   createDetectionSource,
   EPSG_2178,
+  EPSG_2180,
+  MAP_PAN_EXTENT_2180,
   registerDetectionProjections,
   type OrthoYear,
 } from './detectionCoordinates';
+import { setupMapPanCursor } from './setupMapPanCursor';
 
 export type { OrthoYear } from './detectionCoordinates';
 
@@ -126,6 +129,7 @@ if (!projection2178) {
 projection2178.setExtent(MSIP_EXTENT_2178);
 
 const msipExtent3857 = transformExtent(MSIP_EXTENT_2178, EPSG_2178, 'EPSG:3857');
+const mapPanExtent3857 = transformExtent(MAP_PAN_EXTENT_2180, EPSG_2180, 'EPSG:3857');
 const msipTileGrid = new WMTSTileGrid({
   extent: MSIP_EXTENT_2178,
   origin: MSIP_TILE_ORIGIN,
@@ -312,11 +316,13 @@ export class MapController {
         center: fromLonLat(KRAKOW_CENTER),
         zoom: INITIAL_ZOOM,
         minZoom: INITIAL_ZOOM,
+        extent: mapPanExtent3857,
       }),
     });
 
     mapInstance = this.map;
 
+    setupMapPanCursor(this.map);
     setupMapResizeHandling(this.map, config.container);
     requestAnimationFrame(() => {
       this.map.updateSize();

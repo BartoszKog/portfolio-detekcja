@@ -13,6 +13,11 @@ export const EPSG_2180 = 'EPSG:2180';
 const EPSG_2180_PROJ =
   '+proj=tmerc +lat_0=0 +lon_0=19 +k=0.9993 +x_0=500000 +y_0=-5300000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs +type=crs';
 
+/** Map pan limits in EPSG:2180 — SW (242154.8, 564947.9) and NE (246499.2, 569227.4). */
+export const MAP_PAN_EXTENT_2180: [number, number, number, number] = [
+  564947.9, 242154.8, 569227.4, 246499.2, 
+];
+
 const detectionGeoJsonFormat = new GeoJSON({
   dataProjection: EPSG_2180,
   featureProjection: 'EPSG:3857',
