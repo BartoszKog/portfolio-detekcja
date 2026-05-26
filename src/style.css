@@ -15,8 +15,26 @@ body {
   width: 100%;
 }
 
+@layer components {
+  .page-container {
+    @apply mx-auto w-full px-4 sm:px-6;
+    max-width: 93.75rem;
+  }
+
+  .content-width {
+    width: min(100%, calc(min(780px, 72svh) * 16 / 10));
+    @apply mx-auto;
+  }
+
+  .map-frame {
+    @apply relative w-full min-h-[340px];
+    aspect-ratio: 16 / 10;
+    max-height: min(780px, 72svh);
+  }
+}
+
 #map {
-  width: 100%;
+  @apply absolute inset-0 h-full w-full;
 }
 
 .map-scale-line {

@@ -7,78 +7,70 @@
     <title>Wykrywanie Pojazdów - Kraków</title>
   </head>
   <body class="bg-slate-50 text-slate-800 font-sans">
-    <header class="max-w-[1600px] mx-auto px-4 py-8 lg:py-10">
-      <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
-        Wykrywanie Pojazdów na Ortofotomapach Lotniczych
-      </h1>
-      <p class="text-lg text-slate-600 max-w-3xl leading-relaxed">
-        Interaktywna mapa portfolio projektu inżynierskiego: detekcja i analiza pojazdów
-        na ortofotomapach Krakowa z lat 2023 i 2025, z warstwami gęstości KDE oraz bilansu zmian.
-      </p>
-    </header>
+    <main class="page-container mb-16">
+      <div class="content-width space-y-8 lg:space-y-10">
+      <header class="pt-8 lg:pt-10">
+        <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">
+          Wykrywanie Pojazdów na Ortofotomapach Lotniczych
+        </h1>
+        <p class="text-lg text-slate-600 leading-relaxed">
+          Interaktywna mapa portfolio projektu inżynierskiego: detekcja i analiza pojazdów
+          na ortofotomapach Krakowa z lat 2023 i 2025, z warstwami gęstości KDE oraz bilansu zmian.
+        </p>
+      </header>
 
-    <div id="app" class="max-w-[1500px] mx-auto px-4 mb-16">
-      <div
-        class="mb-3 grid grid-cols-[minmax(0,1fr)_2.75rem] md:grid-cols-[3rem_minmax(0,1fr)_3rem] gap-2 md:gap-3 items-start"
-      >
-        <div class="hidden md:block" aria-hidden="true"></div>
+      <div id="app" class="space-y-3">
         <div
           id="ui-panel"
           class="bg-white shadow-lg rounded-lg p-3 border border-slate-200"
         ></div>
-        <div aria-hidden="true"></div>
-      </div>
 
-      <div
-        class="grid grid-cols-[minmax(0,1fr)_2.75rem] md:grid-cols-[3rem_minmax(0,1fr)_3rem] gap-2 md:gap-3 items-start"
-      >
-        <div class="hidden md:block" aria-hidden="true"></div>
-
-        <div class="relative min-w-0">
+        <div class="map-frame">
           <div
             id="map"
-            class="w-full h-[62svh] min-h-[340px] lg:h-[calc(100svh-13rem)] lg:min-h-[520px] lg:max-h-[780px] rounded-2xl shadow-xl border border-slate-200 relative overflow-hidden bg-white"
+            class="rounded-2xl shadow-xl border border-slate-200 overflow-hidden bg-white"
           ></div>
+
+          <div class="absolute right-4 top-4 z-30 flex flex-col gap-2">
+            <button
+              id="layer-options-toggle"
+              type="button"
+              class="h-11 w-11 rounded-full bg-white shadow-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              aria-controls="layer-options-panel"
+              aria-expanded="false"
+              title="Pokaż opcje warstw"
+            >
+              W
+            </button>
+            <button
+              id="legend-toggle"
+              type="button"
+              class="h-11 w-11 rounded-full bg-white shadow-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+              aria-controls="legend-panel"
+              aria-expanded="false"
+              title="Pokaż legendę"
+            >
+              L
+            </button>
+          </div>
 
           <div
             id="layer-options-panel"
-            class="hidden absolute right-4 top-4 z-20 w-[min(18rem,calc(100%-2rem))] bg-white/80 backdrop-blur shadow-xl rounded-lg p-4 border border-slate-200"
+            class="hidden absolute right-16 top-[0.75rem] z-20 w-[min(18rem,calc(100%-2rem))] bg-white/80 backdrop-blur shadow-xl rounded-lg p-4 border border-slate-200"
           ></div>
           <div
             id="legend-panel"
             class="absolute right-4 bottom-10 z-20 w-[min(22rem,calc(100%-2rem))]"
           ></div>
         </div>
-
-        <div class="flex flex-col gap-2 md:sticky md:top-4">
-          <button
-            id="layer-options-toggle"
-            type="button"
-            class="h-11 w-11 rounded-full bg-white shadow-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-            aria-controls="layer-options-panel"
-            aria-expanded="false"
-            title="Pokaż opcje warstw"
-          >
-            W
-          </button>
-          <button
-            id="legend-toggle"
-            type="button"
-            class="h-11 w-11 rounded-full bg-white shadow-lg border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-            aria-controls="legend-panel"
-            aria-expanded="false"
-            title="Pokaż legendę"
-          >
-            L
-          </button>
-        </div>
       </div>
-    </div>
 
-    <section class="max-w-[1500px] mx-auto px-4 py-8 mb-16">
-      <h2 class="text-3xl font-bold mb-6 border-b pb-2">Analiza i Wyniki Modelu</h2>
-      <div id="results-content" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
-    </section>
+      <section class="py-8">
+        <h2 class="text-3xl font-bold mb-6 border-b pb-2">Analiza i Wyniki Modelu</h2>
+        <div id="results-content" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+      </section>
+      </div>
+    </main>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

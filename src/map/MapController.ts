@@ -35,8 +35,10 @@ export interface MapControllerConfig {
   onLoad?: () => void;
 }
 
-const KRAKOW_CENTER: [number, number] = [19.9449, 50.0646];
+// new center coordinates 50.06249786,19.93746765
+const KRAKOW_CENTER: [number, number] = [19.93746765, 50.06249786];
 const INITIAL_ZOOM = 14.5;
+const MIN_ZOOM = 14;
 const MSIP_ATTRIBUTION =
   '© <a href="https://msip.krakow.pl/" target="_blank" rel="noopener noreferrer">MSIP Kraków</a>';
 const CARTO_ATTRIBUTION =
@@ -327,7 +329,7 @@ export class MapController {
       view: new View({
         center: fromLonLat(KRAKOW_CENTER),
         zoom: INITIAL_ZOOM,
-        minZoom: INITIAL_ZOOM,
+        minZoom: MIN_ZOOM,
         extent: mapPanExtent3857,
       }),
     });
