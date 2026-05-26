@@ -13,14 +13,19 @@ const mapController = new MapController({
   onLoad: () => {
     setupScaleLine(mapController.getMap());
 
-    const app = document.querySelector<HTMLElement>('#app');
-    if (app) {
-      setupLegend(app);
+    const legendPanel = document.querySelector<HTMLElement>('#legend-panel');
+    const legendToggle = document.querySelector<HTMLButtonElement>('#legend-toggle');
+    if (legendPanel && legendToggle) {
+      setupLegend(legendPanel, legendToggle);
     }
 
     const panel = document.querySelector<HTMLElement>('#ui-panel');
-    if (panel) {
-      setupLayerToggle(panel);
+    const layerOptionsPanel = document.querySelector<HTMLElement>('#layer-options-panel');
+    const layerOptionsToggle = document.querySelector<HTMLButtonElement>(
+      '#layer-options-toggle',
+    );
+    if (panel && layerOptionsPanel && layerOptionsToggle) {
+      setupLayerToggle(panel, layerOptionsPanel, layerOptionsToggle);
     }
   },
 });

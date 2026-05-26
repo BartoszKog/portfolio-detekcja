@@ -11,20 +11,24 @@ type LayerSelection = '2023' | '2025' | 'diff';
 interface LayerOption {
   selection: LayerSelection;
   label: string;
+  shortLabel: string;
 }
 
 const LAYER_OPTIONS: LayerOption[] = [
   {
     selection: '2025',
     label: 'Ortofotomapa 2025 (GSD 5cm)',
+    shortLabel: '2025',
   },
   {
     selection: '2023',
     label: 'Ortofotomapa 2023 (GSD 5cm)',
+    shortLabel: '2023',
   },
   {
     selection: 'diff',
     label: 'Bilans Zmian KDE (2025 vs 2023)',
+    shortLabel: 'Zmiany',
   },
 ];
 
@@ -214,14 +218,33 @@ function setActiveSelection(
   updateButtonStyles(activeSelection, controls.buttons);
 }
 
-/** Injects an orthophoto layer toggle control into the given container. */
-export function setupLayerToggle(container: HTMLElement): void {
+function applyPanelToggleState(
+  panel: HTMLElement,
+  toggleButton: HTMLButtonElement,
+  isOpen: boolean,
+): void {
+  panel.classList.toggle('hidden', !isOpen);
+  toggleButton.setAttribute('aria-expanded', String(isOpen));
+  toggleButton.classList.toggle('bg-slate-900', isOpen);
+  toggleButton.classList.toggle('text-white', isOpen);
+  toggleButton.classList.toggle('bg-white', !isOpen);
+  toggleButton.classList.toggle('text-slate-700', !isOpen);
+  toggleButton.classList.toggle('hover:bg-slate-800', isOpen);
+  toggleButton.classList.toggle('hover:bg-slate-100', !isOpen);
+}
+
+/** Injects map variant controls and the optional layer visibility panel. */
+export function setupLayerToggle(
+  variantContainer: HTMLElement,
+  optionsContainer: HTMLElement,
+  optionsToggleButton: HTMLButtonElement,
+): void {
   const wrapper = document.createElement('div');
-  wrapper.className = 'mt-3 flex flex-col gap-2';
+  wrapper.className = 'flex flex-wrap items-center gap-3';
 
   const label = document.createElement('p');
-  label.className = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
-  label.textContent = 'Warstwa ortofotomapy';
+  label.className = 'shrink-0 text-xs font-semibold uppercase tracking-wide text-slate-500';
+  label.textContent = 'Wariant mapy';
   wrapper.appendChild(label);
 
   const buttonGroup = document.createElement('div');
@@ -240,8 +263,27 @@ export function setupLayerToggle(container: HTMLElement): void {
 
   const buttons = new Map<LayerSelection, HTMLButtonElement>();
 
+  const shortcutHelp = document.createElement('p');
+  shortcutHelp.className = [
+    'ml-auto',
+    'text-xs',
+    'text-slate-500',
+    'leading-snug',
+    'max-w-sm',
+    'hidden',
+    'sm:block',
+  ].join(' ');
+  shortcutHelp.textContent = 'W - opcje warstw, L - legenda mapy';
+
   const separator = document.createElement('div');
-  separator.className = 'border-t border-slate-200 my-3';
+  separator.className = 'border-t border-slate-300 my-3';
+
+  const optionsWrapper = document.createElement('div');
+  optionsWrapper.className = 'flex flex-col gap-2';
+
+  const optionsTitle = document.createElement('p');
+  optionsTitle.className = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
+  optionsTitle.textContent = 'Widoczność warstw';
 
   const orthoCheckbox = createOptionCheckbox('Pokaż ortofotomapę');
   const densityKdeCheckbox = createOptionCheckbox('Pokaż zagęszczenie pojazdów (KDE)');
@@ -262,6 +304,12 @@ export function setupLayerToggle(container: HTMLElement): void {
     detectionPointsCheckbox,
     activeSelection: '2025',
   };
+
+  let isOptionsPanelOpen = false;
+  optionsToggleButton.addEventListener('click', () => {
+    isOptionsPanelOpen = !isOptionsPanelOpen;
+    applyPanelToggleState(optionsContainer, optionsToggleButton, isOptionsPanelOpen);
+  });
 
   orthoCheckbox.checkbox.addEventListener('change', () => {
     applyMapLayers(controls);
@@ -290,7 +338,10 @@ export function setupLayerToggle(container: HTMLElement): void {
   for (const option of LAYER_OPTIONS) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.textContent = option.label;
+    button.title = option.label;
+    button.setAttribute('aria-label', option.label);
+
+    button.textContent = option.shortLabel;
     button.addEventListener('click', () => {
       setActiveSelection(option.selection, controls);
     });
@@ -299,12 +350,19 @@ export function setupLayerToggle(container: HTMLElement): void {
   }
 
   wrapper.appendChild(buttonGroup);
-  wrapper.appendChild(separator);
-  wrapper.appendChild(orthoCheckbox.wrapper);
-  wrapper.appendChild(densityKdeCheckbox.wrapper);
-  wrapper.appendChild(detectionPointsCheckbox.wrapper);
-  wrapper.appendChild(diffKdeCheckbox.wrapper);
-  container.appendChild(wrapper);
+  wrapper.appendChild(shortcutHelp);
+  variantContainer.appendChild(wrapper);
 
+  optionsWrapper.append(
+    optionsTitle,
+    separator,
+    orthoCheckbox.wrapper,
+    densityKdeCheckbox.wrapper,
+    detectionPointsCheckbox.wrapper,
+    diffKdeCheckbox.wrapper,
+  );
+  optionsContainer.appendChild(optionsWrapper);
+
+  applyPanelToggleState(optionsContainer, optionsToggleButton, isOptionsPanelOpen);
   setActiveSelection('2025', controls);
 }

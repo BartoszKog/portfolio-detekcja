@@ -40,6 +40,10 @@ let colorRampElement: HTMLDivElement | null = null;
 let numericLabelElements: HTMLSpanElement[] = [];
 let descriptiveLabelElements: HTMLSpanElement[] = [];
 let detectionSection: HTMLDivElement | null = null;
+let legendSeparator: HTMLDivElement | null = null;
+let legendToggleButton: HTMLButtonElement | null = null;
+let isLegendOpen = false;
+let hasLegendContent = false;
 
 function applyLegendContent(config: LegendContentConfig): void {
   if (!titleElement || !colorRampElement) {
@@ -57,20 +61,58 @@ function applyLegendContent(config: LegendContentConfig): void {
   descriptiveLabelElements[1].textContent = config.descriptiveLabels[1];
 }
 
+function applyToggleButtonState(): void {
+  if (!legendToggleButton) {
+    return;
+  }
+
+  const isActive = hasLegendContent && isLegendOpen;
+  legendToggleButton.disabled = !hasLegendContent;
+  legendToggleButton.setAttribute('aria-expanded', String(isActive));
+  legendToggleButton.classList.toggle('bg-slate-900', isActive);
+  legendToggleButton.classList.toggle('text-white', isActive);
+  legendToggleButton.classList.toggle('bg-white', !isActive);
+  legendToggleButton.classList.toggle('text-slate-700', !isActive);
+  legendToggleButton.classList.toggle('hover:bg-slate-800', isActive);
+  legendToggleButton.classList.toggle('hover:bg-slate-100', !isActive && hasLegendContent);
+  legendToggleButton.classList.toggle('opacity-50', !hasLegendContent);
+  legendToggleButton.classList.toggle('cursor-not-allowed', !hasLegendContent);
+}
+
+function applyLegendVisibility(): void {
+  if (!legendContainer) {
+    return;
+  }
+
+  legendContainer.classList.toggle('hidden', !hasLegendContent || !isLegendOpen);
+  applyToggleButtonState();
+}
+
 /** Injects the map legend panel into the given container. */
-export function setupLegend(container: HTMLElement): void {
+export function setupLegend(
+  container: HTMLElement,
+  toggleButton: HTMLButtonElement,
+): void {
+  legendToggleButton = toggleButton;
+  legendToggleButton.addEventListener('click', () => {
+    if (!hasLegendContent) {
+      return;
+    }
+
+    isLegendOpen = !isLegendOpen;
+    applyLegendVisibility();
+  });
+
   legendContainer = document.createElement('div');
   legendContainer.className = [
-    'absolute',
-    'z-10',
-    'bottom-8',
-    'right-8',
-    'bg-white/90',
-    'backdrop-blur-sm',
+    'w-full',
+    'bg-white/75',
+    'backdrop-blur',
     'shadow-lg',
     'rounded-lg',
     'p-4',
-    'w-72',
+    'border',
+    'border-slate-200',
     'hidden',
   ].join(' ');
 
@@ -103,7 +145,7 @@ export function setupLegend(container: HTMLElement): void {
   gradientSection.append(titleElement, colorRampElement, numericLabels, descriptiveLabels);
 
   detectionSection = document.createElement('div');
-  detectionSection.className = 'hidden border-t border-slate-200 pt-3 mt-3';
+  detectionSection.className = 'hidden text-left';
 
   const detectionTitle = document.createElement('h3');
   detectionTitle.className = 'text-sm font-bold text-slate-800 mb-2';
@@ -125,8 +167,28 @@ export function setupLegend(container: HTMLElement): void {
   detectionEntry.append(detectionSymbol, detectionLabel);
   detectionSection.append(detectionTitle, detectionEntry);
 
-  legendContainer.append(gradientSection, detectionSection);
+  legendSeparator = document.createElement('div');
+  legendSeparator.className = 'hidden border-t border-slate-300';
+
+  legendContainer.append(gradientSection, legendSeparator, detectionSection);
   container.appendChild(legendContainer);
+  applyToggleButtonState();
+}
+
+function applyLegendLayout(showGradient: boolean, showDetection: boolean): void {
+  if (!legendContainer || !gradientSection || !detectionSection || !legendSeparator) {
+    return;
+  }
+
+  const isSplitLayout = showGradient && showDetection;
+
+  legendContainer.classList.toggle('flex', isSplitLayout);
+  legendContainer.classList.toggle('flex-col', isSplitLayout);
+  legendContainer.classList.toggle('gap-4', isSplitLayout);
+
+  gradientSection.classList.toggle('flex-1', isSplitLayout);
+  gradientSection.classList.toggle('min-w-0', isSplitLayout);
+  legendSeparator.classList.toggle('hidden', !isSplitLayout);
 }
 
 /** Updates gradient and detection legend sections based on the current map state. */
@@ -136,25 +198,21 @@ export function updateLegend(state: LegendState): void {
   }
 
   const showGradient = state.gradientType !== 'none';
-  const showPanel = showGradient || state.showDetection;
+  hasLegendContent = showGradient || state.showDetection;
 
-  if (!showPanel) {
-    legendContainer.classList.add('hidden');
+  if (!hasLegendContent) {
+    isLegendOpen = false;
+    applyLegendVisibility();
     return;
   }
 
-  legendContainer.classList.remove('hidden');
   gradientSection.classList.toggle('hidden', !showGradient);
+  detectionSection.classList.toggle('hidden', !state.showDetection);
 
   if (showGradient) {
     applyLegendContent(state.gradientType === 'diff' ? DIFF_LEGEND_CONFIG : DENSITY_LEGEND_CONFIG);
   }
 
-  detectionSection.classList.toggle('hidden', !state.showDetection);
-
-  if (state.showDetection && showGradient) {
-    detectionSection.classList.add('border-t', 'border-slate-200', 'pt-3', 'mt-3');
-  } else {
-    detectionSection.classList.remove('border-t', 'pt-3', 'mt-3');
-  }
+  applyLegendLayout(showGradient, state.showDetection);
+  applyLegendVisibility();
 }
