@@ -1,8 +1,10 @@
 import {
+  isDetectionZoomAvailable,
   setDiffHeatmapVisible,
+  subscribeToViewChange,
   toggleLayer,
 } from '../map/MapController';
-import { toggleLegendVisibility } from './Legend';
+import { updateLegend, type LegendType } from './Legend';
 
 type LayerSelection = '2023' | '2025' | 'diff';
 
@@ -43,26 +45,118 @@ const INACTIVE_BUTTON_CLASSES = [
   'hover:text-slate-700',
 ].join(' ');
 
+const OPTION_CHECKBOX_LABEL_CLASSES = [
+  'flex',
+  'items-center',
+  'space-x-2',
+  'text-sm',
+  'text-slate-700',
+  'cursor-pointer',
+].join(' ');
+
+const OPTION_CHECKBOX_INPUT_CLASSES = [
+  'h-4',
+  'w-4',
+  'rounded',
+  'border-slate-300',
+  'text-slate-900',
+  'focus:ring-2',
+  'focus:ring-slate-400',
+  'focus:ring-offset-1',
+].join(' ');
+
+interface OptionCheckboxControl {
+  wrapper: HTMLDivElement;
+  checkbox: HTMLInputElement;
+}
+
 interface LayerToggleControls {
   buttons: Map<LayerSelection, HTMLButtonElement>;
-  kdeCheckboxWrapper: HTMLDivElement;
-  kdeCheckbox: HTMLInputElement;
+  densityKdeCheckbox: OptionCheckboxControl;
+  diffKdeCheckbox: OptionCheckboxControl;
+  detectionPointsCheckbox: OptionCheckboxControl;
+  activeSelection: LayerSelection;
+}
+
+function createOptionCheckbox(labelText: string): OptionCheckboxControl {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'pl-1';
+
+  const label = document.createElement('label');
+  label.className = OPTION_CHECKBOX_LABEL_CLASSES;
+
+  const checkbox = document.createElement('input');
+  checkbox.type = 'checkbox';
+  checkbox.className = OPTION_CHECKBOX_INPUT_CLASSES;
+
+  const text = document.createElement('span');
+  text.textContent = labelText;
+
+  label.append(checkbox, text);
+  wrapper.appendChild(label);
+
+  return { wrapper, checkbox };
+}
+
+function getLegendType(
+  activeSelection: LayerSelection,
+  densityChecked: boolean,
+  diffChecked: boolean,
+): LegendType {
+  if (activeSelection === 'diff') {
+    return diffChecked ? 'diff' : 'none';
+  }
+
+  return densityChecked ? 'density' : 'none';
+}
+
+function applyMapLayers(controls: LayerToggleControls): void {
+  toggleLayer(
+    controls.activeSelection,
+    controls.densityKdeCheckbox.checkbox.checked,
+    controls.detectionPointsCheckbox.checkbox.checked,
+  );
+}
+
+function updateDetectionCheckboxAvailability(controls: LayerToggleControls): void {
+  const isOrthoMode = controls.activeSelection !== 'diff';
+  const { wrapper, checkbox } = controls.detectionPointsCheckbox;
+
+  wrapper.classList.toggle('hidden', !isOrthoMode);
+
+  if (!isOrthoMode) {
+    return;
+  }
+
+  const zoomAvailable = isDetectionZoomAvailable();
+  wrapper.classList.toggle('opacity-50', !zoomAvailable);
+  wrapper.classList.toggle('pointer-events-none', !zoomAvailable);
+  checkbox.disabled = !zoomAvailable;
 }
 
 function applyLayerSelection(
   activeSelection: LayerSelection,
   controls: LayerToggleControls,
 ): void {
-  toggleLayer(activeSelection);
+  controls.activeSelection = activeSelection;
+  applyMapLayers(controls);
 
   const isDiffMode = activeSelection === 'diff';
-  controls.kdeCheckboxWrapper.classList.toggle('hidden', !isDiffMode);
-  toggleLegendVisibility(isDiffMode);
+  controls.densityKdeCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
+  controls.diffKdeCheckbox.wrapper.classList.toggle('hidden', !isDiffMode);
+  updateDetectionCheckboxAvailability(controls);
 
   if (isDiffMode) {
-    controls.kdeCheckbox.checked = true;
-    setDiffHeatmapVisible(true);
+    setDiffHeatmapVisible(controls.diffKdeCheckbox.checkbox.checked);
   }
+
+  updateLegend(
+    getLegendType(
+      activeSelection,
+      controls.densityKdeCheckbox.checkbox.checked,
+      controls.diffKdeCheckbox.checkbox.checked,
+    ),
+  );
 }
 
 function updateButtonStyles(
@@ -128,49 +222,55 @@ export function setupLayerToggle(container: HTMLElement): void {
 
   const buttons = new Map<LayerSelection, HTMLButtonElement>();
 
-  const kdeCheckboxWrapper = document.createElement('div');
-  kdeCheckboxWrapper.className = 'hidden pl-1';
+  const separator = document.createElement('div');
+  separator.className = 'border-t border-slate-200 my-3';
 
-  const kdeCheckboxLabel = document.createElement('label');
-  kdeCheckboxLabel.className = [
-    'inline-flex',
-    'items-center',
-    'gap-2',
-    'text-xs',
-    'font-medium',
-    'text-slate-600',
-    'cursor-pointer',
-    'select-none',
-  ].join(' ');
+  const densityKdeCheckbox = createOptionCheckbox('Pokaż zagęszczenie pojazdów (KDE)');
+  const detectionPointsCheckbox = createOptionCheckbox('Pokaż punkty detekcji pojazdów');
+  const diffKdeCheckbox = createOptionCheckbox('Pokaż bilans zmian gęstości (KDE)');
 
-  const kdeCheckbox = document.createElement('input');
-  kdeCheckbox.type = 'checkbox';
-  kdeCheckbox.checked = true;
-  kdeCheckbox.className = [
-    'h-4',
-    'w-4',
-    'rounded',
-    'border-slate-300',
-    'text-slate-900',
-    'focus:ring-2',
-    'focus:ring-slate-400',
-    'focus:ring-offset-1',
-  ].join(' ');
-  kdeCheckbox.addEventListener('change', () => {
-    setDiffHeatmapVisible(kdeCheckbox.checked);
-  });
-
-  const kdeCheckboxText = document.createElement('span');
-  kdeCheckboxText.textContent = 'Pokaż warstwę KDE';
-
-  kdeCheckboxLabel.append(kdeCheckbox, kdeCheckboxText);
-  kdeCheckboxWrapper.appendChild(kdeCheckboxLabel);
+  densityKdeCheckbox.checkbox.checked = true;
+  detectionPointsCheckbox.checkbox.checked = true;
+  diffKdeCheckbox.checkbox.checked = true;
+  diffKdeCheckbox.wrapper.classList.add('hidden');
 
   const controls: LayerToggleControls = {
     buttons,
-    kdeCheckboxWrapper,
-    kdeCheckbox,
+    densityKdeCheckbox,
+    diffKdeCheckbox,
+    detectionPointsCheckbox,
+    activeSelection: '2025',
   };
+
+  densityKdeCheckbox.checkbox.addEventListener('change', () => {
+    applyMapLayers(controls);
+    updateLegend(
+      getLegendType(
+        controls.activeSelection,
+        densityKdeCheckbox.checkbox.checked,
+        diffKdeCheckbox.checkbox.checked,
+      ),
+    );
+  });
+
+  detectionPointsCheckbox.checkbox.addEventListener('change', () => {
+    applyMapLayers(controls);
+  });
+
+  diffKdeCheckbox.checkbox.addEventListener('change', () => {
+    setDiffHeatmapVisible(diffKdeCheckbox.checkbox.checked);
+    updateLegend(
+      getLegendType(
+        controls.activeSelection,
+        densityKdeCheckbox.checkbox.checked,
+        diffKdeCheckbox.checkbox.checked,
+      ),
+    );
+  });
+
+  subscribeToViewChange(() => {
+    updateDetectionCheckboxAvailability(controls);
+  });
 
   for (const option of LAYER_OPTIONS) {
     const button = document.createElement('button');
@@ -184,7 +284,10 @@ export function setupLayerToggle(container: HTMLElement): void {
   }
 
   wrapper.appendChild(buttonGroup);
-  wrapper.appendChild(kdeCheckboxWrapper);
+  wrapper.appendChild(separator);
+  wrapper.appendChild(densityKdeCheckbox.wrapper);
+  wrapper.appendChild(detectionPointsCheckbox.wrapper);
+  wrapper.appendChild(diffKdeCheckbox.wrapper);
   container.appendChild(wrapper);
 
   setActiveSelection('2025', controls);

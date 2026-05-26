@@ -22,6 +22,8 @@ export type { OrthoYear } from './detectionCoordinates';
 
 export type LayerMode = OrthoYear | 'diff';
 
+export const DETECTION_MIN_ZOOM = 16;
+
 export interface MapControllerConfig {
   container: string | HTMLElement;
   onLoad?: () => void;
@@ -29,7 +31,6 @@ export interface MapControllerConfig {
 
 const KRAKOW_CENTER: [number, number] = [19.9449, 50.0646];
 const INITIAL_ZOOM = 14.5;
-const DETECTION_MIN_ZOOM = 16;
 const MSIP_ATTRIBUTION = '© MSIP Kraków';
 const CARTO_ATTRIBUTION = '© OpenStreetMap contributors © CARTO';
 const MSIP_TILE_MATRIX_SET = 'default028mm';
@@ -92,16 +93,26 @@ const DETECTION_LAYER_CONFIGS: readonly DetectionLayerConfig[] = [
   {
     year: '2025',
     url: './data/detections_2025.geojson',
-    visible: true,
+    visible: false,
   },
 ] as const;
 
 const DIFF_HEATMAP_TILE_URL = './tiles/diff_2025_2023/{z}/{x}/{y}.png';
 const DIFF_HEATMAP_Z_INDEX = 5;
+const DENSITY_TILE_URLS: Record<OrthoYear, string> = {
+  '2023': './tiles/density_2023/{z}/{x}/{y}.png',
+  '2025': './tiles/density_2025/{z}/{x}/{y}.png',
+};
+const DENSITY_TILE_Z_INDEX = 10;
 
 let mapInstance: Map | null = null;
 let diffHeatmapLayer: TileLayer<XYZ> | null = null;
+let activeMode: LayerMode = '2025';
+let isKdeChecked = true;
+let isDiffHeatmapVisible = true;
+let isDetectionPointsChecked = true;
 const orthoLayers = new globalThis.Map<OrthoYear, TileLayer<WMTS>>();
+const densityLayers = new globalThis.Map<OrthoYear, TileLayer<XYZ>>();
 const detectionLayers = new globalThis.Map<OrthoYear, VectorLayer<VectorSource>>();
 
 registerDetectionProjections();
@@ -121,22 +132,60 @@ const msipTileGrid = new WMTSTileGrid({
   tileSize: MSIP_TILE_SIZE,
 });
 
-/** Activates one layer mode: orthophoto year (A/B) or difference heatmap (C). */
-export function toggleLayer(mode: LayerMode): void {
+/** Applies orthophoto, density, detection, and diff layer visibility from current state. */
+function applyLayerVisibility(): void {
   for (const [layerYear, layer] of orthoLayers) {
-    layer.setVisible(mode === layerYear);
+    layer.setVisible(activeMode === layerYear);
+  }
+  for (const [layerYear, layer] of densityLayers) {
+    layer.setVisible(activeMode === layerYear && isKdeChecked);
   }
   for (const [layerYear, layer] of detectionLayers) {
-    layer.setVisible(mode === layerYear);
+    layer.setVisible(activeMode === layerYear && isDetectionPointsChecked);
   }
-  diffHeatmapLayer?.setVisible(mode === 'diff');
+  diffHeatmapLayer?.setVisible(activeMode === 'diff' && isDiffHeatmapVisible);
   mapInstance?.render();
+}
+
+/** Activates one layer mode and optional overlay visibility for orthophoto years. */
+export function toggleLayer(
+  mode: LayerMode,
+  kdeChecked: boolean,
+  detectionPointsChecked: boolean,
+): void {
+  activeMode = mode;
+  isKdeChecked = kdeChecked;
+  isDetectionPointsChecked = detectionPointsChecked;
+  applyLayerVisibility();
 }
 
 /** Toggles difference heatmap visibility without changing the active layer mode. */
 export function setDiffHeatmapVisible(visible: boolean): void {
-  diffHeatmapLayer?.setVisible(visible);
-  mapInstance?.render();
+  isDiffHeatmapVisible = visible;
+  applyLayerVisibility();
+}
+
+/** Returns the current map zoom level. */
+export function getCurrentZoom(): number {
+  return mapInstance?.getView().getZoom() ?? INITIAL_ZOOM;
+}
+
+/** Returns whether the current zoom level supports detection point layers. */
+export function isDetectionZoomAvailable(): boolean {
+  return getCurrentZoom() >= DETECTION_MIN_ZOOM;
+}
+
+/** Subscribes to map view changes such as zoom updates. Returns an unsubscribe function. */
+export function subscribeToViewChange(listener: () => void): () => void {
+  if (!mapInstance) {
+    return (): void => {};
+  }
+
+  const view = mapInstance.getView();
+  view.on('change:resolution', listener);
+  return (): void => {
+    view.un('change:resolution', listener);
+  };
 }
 
 /** Ensures the map canvas matches its container dimensions. */
@@ -178,6 +227,20 @@ function createDiffHeatmapLayer(): TileLayer<XYZ> {
   });
 
   diffHeatmapLayer = layer;
+  return layer;
+}
+
+function createDensityLayer(year: OrthoYear): TileLayer<XYZ> {
+  const layer = new TileLayer({
+    source: new XYZ({
+      url: DENSITY_TILE_URLS[year],
+      crossOrigin: 'anonymous',
+    }),
+    visible: false,
+    zIndex: DENSITY_TILE_Z_INDEX,
+  });
+
+  densityLayers.set(year, layer);
   return layer;
 }
 
@@ -233,7 +296,7 @@ function createDetectionLayer(config: DetectionLayerConfig): VectorLayer<VectorS
   const layer = new VectorLayer({
     source: createDetectionSource(config.url),
     style: createDetectionStyle(config.year),
-    visible: config.visible,
+    visible: false,
     minZoom: DETECTION_MIN_ZOOM,
     zIndex: 10,
   });
@@ -253,6 +316,7 @@ export class MapController {
         createBasemapLayer(),
         ...ORTHO_LAYER_CONFIGS.map((layerConfig) => createOrthophotoLayer(layerConfig)),
         createDiffHeatmapLayer(),
+        ...ORTHO_LAYER_CONFIGS.map((layerConfig) => createDensityLayer(layerConfig.year)),
         ...DETECTION_LAYER_CONFIGS.map((layerConfig) => createDetectionLayer(layerConfig)),
       ],
       view: new View({
