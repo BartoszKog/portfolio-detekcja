@@ -4,7 +4,7 @@ import {
   subscribeToViewChange,
   toggleLayer,
 } from '../map/MapController';
-import { updateLegend, type LegendType } from './Legend';
+import { updateLegend, type GradientLegendType } from './Legend';
 
 type LayerSelection = '2023' | '2025' | 'diff';
 
@@ -98,16 +98,37 @@ function createOptionCheckbox(labelText: string): OptionCheckboxControl {
   return { wrapper, checkbox };
 }
 
-function getLegendType(
+function getGradientLegendType(
   activeSelection: LayerSelection,
   densityChecked: boolean,
   diffChecked: boolean,
-): LegendType {
+): GradientLegendType {
   if (activeSelection === 'diff') {
     return diffChecked ? 'diff' : 'none';
   }
 
   return densityChecked ? 'density' : 'none';
+}
+
+function shouldShowDetectionLegend(controls: LayerToggleControls): boolean {
+  if (controls.activeSelection === 'diff') {
+    return false;
+  }
+
+  return (
+    controls.detectionPointsCheckbox.checkbox.checked && isDetectionZoomAvailable()
+  );
+}
+
+function refreshLegend(controls: LayerToggleControls): void {
+  updateLegend({
+    gradientType: getGradientLegendType(
+      controls.activeSelection,
+      controls.densityKdeCheckbox.checkbox.checked,
+      controls.diffKdeCheckbox.checkbox.checked,
+    ),
+    showDetection: shouldShowDetectionLegend(controls),
+  });
 }
 
 function applyMapLayers(controls: LayerToggleControls): void {
@@ -150,13 +171,7 @@ function applyLayerSelection(
     setDiffHeatmapVisible(controls.diffKdeCheckbox.checkbox.checked);
   }
 
-  updateLegend(
-    getLegendType(
-      activeSelection,
-      controls.densityKdeCheckbox.checkbox.checked,
-      controls.diffKdeCheckbox.checkbox.checked,
-    ),
-  );
+  refreshLegend(controls);
 }
 
 function updateButtonStyles(
@@ -244,32 +259,22 @@ export function setupLayerToggle(container: HTMLElement): void {
 
   densityKdeCheckbox.checkbox.addEventListener('change', () => {
     applyMapLayers(controls);
-    updateLegend(
-      getLegendType(
-        controls.activeSelection,
-        densityKdeCheckbox.checkbox.checked,
-        diffKdeCheckbox.checkbox.checked,
-      ),
-    );
+    refreshLegend(controls);
   });
 
   detectionPointsCheckbox.checkbox.addEventListener('change', () => {
     applyMapLayers(controls);
+    refreshLegend(controls);
   });
 
   diffKdeCheckbox.checkbox.addEventListener('change', () => {
     setDiffHeatmapVisible(diffKdeCheckbox.checkbox.checked);
-    updateLegend(
-      getLegendType(
-        controls.activeSelection,
-        densityKdeCheckbox.checkbox.checked,
-        diffKdeCheckbox.checkbox.checked,
-      ),
-    );
+    refreshLegend(controls);
   });
 
   subscribeToViewChange(() => {
     updateDetectionCheckboxAvailability(controls);
+    refreshLegend(controls);
   });
 
   for (const option of LAYER_OPTIONS) {

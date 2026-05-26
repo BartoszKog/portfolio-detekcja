@@ -23,6 +23,8 @@ export type { OrthoYear } from './detectionCoordinates';
 export type LayerMode = OrthoYear | 'diff';
 
 export const DETECTION_MIN_ZOOM = 16;
+export const DETECTION_POINT_FILL = 'rgba(59, 130, 246, 0.85)';
+export const DETECTION_POINT_STROKE = '#ffffff';
 
 export interface MapControllerConfig {
   container: string | HTMLElement;
@@ -269,25 +271,12 @@ function createOrthophotoLayer(config: OrthoLayerConfig): TileLayer<WMTS> {
   return layer;
 }
 
-const DETECTION_STYLES: Record<OrthoYear, { fill: string; stroke: string }> = {
-  '2023': {
-    fill: 'rgba(59, 130, 246, 0.85)',
-    stroke: '#ffffff',
-  },
-  '2025': {
-    fill: 'rgba(239, 68, 68, 0.85)',
-    stroke: '#ffffff',
-  },
-};
-
-function createDetectionStyle(year: OrthoYear): Style {
-  const colors = DETECTION_STYLES[year];
-
+function createDetectionStyle(): Style {
   return new Style({
     image: new CircleStyle({
       radius: 4,
-      fill: new Fill({ color: colors.fill }),
-      stroke: new Stroke({ color: colors.stroke, width: 1.5 }),
+      fill: new Fill({ color: DETECTION_POINT_FILL }),
+      stroke: new Stroke({ color: DETECTION_POINT_STROKE, width: 1.5 }),
     }),
   });
 }
@@ -295,7 +284,7 @@ function createDetectionStyle(year: OrthoYear): Style {
 function createDetectionLayer(config: DetectionLayerConfig): VectorLayer<VectorSource> {
   const layer = new VectorLayer({
     source: createDetectionSource(config.url),
-    style: createDetectionStyle(config.year),
+    style: createDetectionStyle(),
     visible: false,
     minZoom: DETECTION_MIN_ZOOM,
     zIndex: 10,

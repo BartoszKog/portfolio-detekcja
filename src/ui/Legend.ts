@@ -1,4 +1,14 @@
-export type LegendType = 'density' | 'diff' | 'none';
+import {
+  DETECTION_POINT_FILL,
+  DETECTION_POINT_STROKE,
+} from '../map/MapController';
+
+export type GradientLegendType = 'density' | 'diff' | 'none';
+
+export interface LegendState {
+  gradientType: GradientLegendType;
+  showDetection: boolean;
+}
 
 interface LegendContentConfig {
   title: string;
@@ -24,10 +34,12 @@ const DENSITY_LEGEND_CONFIG: LegendContentConfig = {
 };
 
 let legendContainer: HTMLElement | null = null;
+let gradientSection: HTMLDivElement | null = null;
 let titleElement: HTMLHeadingElement | null = null;
 let colorRampElement: HTMLDivElement | null = null;
 let numericLabelElements: HTMLSpanElement[] = [];
 let descriptiveLabelElements: HTMLSpanElement[] = [];
+let detectionSection: HTMLDivElement | null = null;
 
 function applyLegendContent(config: LegendContentConfig): void {
   if (!titleElement || !colorRampElement) {
@@ -62,6 +74,8 @@ export function setupLegend(container: HTMLElement): void {
     'hidden',
   ].join(' ');
 
+  gradientSection = document.createElement('div');
+
   titleElement = document.createElement('h3');
   titleElement.className = 'text-sm font-bold text-slate-800 mb-2';
 
@@ -86,21 +100,61 @@ export function setupLegend(container: HTMLElement): void {
   descriptiveLabelElements = [decreaseLabel, increaseLabel];
   descriptiveLabels.append(decreaseLabel, increaseLabel);
 
-  legendContainer.append(titleElement, colorRampElement, numericLabels, descriptiveLabels);
+  gradientSection.append(titleElement, colorRampElement, numericLabels, descriptiveLabels);
+
+  detectionSection = document.createElement('div');
+  detectionSection.className = 'hidden border-t border-slate-200 pt-3 mt-3';
+
+  const detectionTitle = document.createElement('h3');
+  detectionTitle.className = 'text-sm font-bold text-slate-800 mb-2';
+  detectionTitle.textContent = 'Detekcja pojazdów';
+
+  const detectionEntry = document.createElement('div');
+  detectionEntry.className = 'flex items-center gap-2';
+
+  const detectionSymbol = document.createElement('span');
+  detectionSymbol.className = 'inline-block h-3 w-3 shrink-0 rounded-full';
+  detectionSymbol.style.backgroundColor = DETECTION_POINT_FILL;
+  detectionSymbol.style.border = `1.5px solid ${DETECTION_POINT_STROKE}`;
+  detectionSymbol.setAttribute('aria-hidden', 'true');
+
+  const detectionLabel = document.createElement('span');
+  detectionLabel.className = 'text-xs text-slate-600';
+  detectionLabel.textContent = 'Wykryty pojazd';
+
+  detectionEntry.append(detectionSymbol, detectionLabel);
+  detectionSection.append(detectionTitle, detectionEntry);
+
+  legendContainer.append(gradientSection, detectionSection);
   container.appendChild(legendContainer);
 }
 
-/** Updates legend content and visibility for density, diff, or hidden state. */
-export function updateLegend(type: LegendType): void {
-  if (!legendContainer) {
+/** Updates gradient and detection legend sections based on the current map state. */
+export function updateLegend(state: LegendState): void {
+  if (!legendContainer || !gradientSection || !detectionSection) {
     return;
   }
 
-  if (type === 'none') {
+  const showGradient = state.gradientType !== 'none';
+  const showPanel = showGradient || state.showDetection;
+
+  if (!showPanel) {
     legendContainer.classList.add('hidden');
     return;
   }
 
-  applyLegendContent(type === 'diff' ? DIFF_LEGEND_CONFIG : DENSITY_LEGEND_CONFIG);
   legendContainer.classList.remove('hidden');
+  gradientSection.classList.toggle('hidden', !showGradient);
+
+  if (showGradient) {
+    applyLegendContent(state.gradientType === 'diff' ? DIFF_LEGEND_CONFIG : DENSITY_LEGEND_CONFIG);
+  }
+
+  detectionSection.classList.toggle('hidden', !state.showDetection);
+
+  if (state.showDetection && showGradient) {
+    detectionSection.classList.add('border-t', 'border-slate-200', 'pt-3', 'mt-3');
+  } else {
+    detectionSection.classList.remove('border-t', 'pt-3', 'mt-3');
+  }
 }
