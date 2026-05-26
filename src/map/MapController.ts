@@ -113,6 +113,7 @@ const DENSITY_TILE_Z_INDEX = 10;
 let mapInstance: Map | null = null;
 let diffHeatmapLayer: TileLayer<XYZ> | null = null;
 let activeMode: LayerMode = '2025';
+let isOrthoVisible = true;
 let isKdeChecked = true;
 let isDiffHeatmapVisible = true;
 let isDetectionPointsChecked = true;
@@ -141,7 +142,7 @@ const msipTileGrid = new WMTSTileGrid({
 /** Applies orthophoto, density, detection, and diff layer visibility from current state. */
 function applyLayerVisibility(): void {
   for (const [layerYear, layer] of orthoLayers) {
-    layer.setVisible(activeMode === layerYear);
+    layer.setVisible(activeMode === layerYear && isOrthoVisible);
   }
   for (const [layerYear, layer] of densityLayers) {
     layer.setVisible(activeMode === layerYear && isKdeChecked);
@@ -156,10 +157,12 @@ function applyLayerVisibility(): void {
 /** Activates one layer mode and optional overlay visibility for orthophoto years. */
 export function toggleLayer(
   mode: LayerMode,
+  orthoChecked: boolean,
   kdeChecked: boolean,
   detectionPointsChecked: boolean,
 ): void {
   activeMode = mode;
+  isOrthoVisible = orthoChecked;
   isKdeChecked = kdeChecked;
   isDetectionPointsChecked = detectionPointsChecked;
   applyLayerVisibility();
@@ -214,7 +217,7 @@ function setupMapResizeHandling(map: Map, container: string | HTMLElement): void
 function createBasemapLayer(): TileLayer<XYZ> {
   return new TileLayer({
     source: new XYZ({
-      url: 'https://{a-c}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+      url: 'https://{a-c}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
       attributions: CARTO_ATTRIBUTION,
       crossOrigin: 'anonymous',
       maxZoom: 20,

@@ -72,6 +72,7 @@ interface OptionCheckboxControl {
 
 interface LayerToggleControls {
   buttons: Map<LayerSelection, HTMLButtonElement>;
+  orthoCheckbox: OptionCheckboxControl;
   densityKdeCheckbox: OptionCheckboxControl;
   diffKdeCheckbox: OptionCheckboxControl;
   detectionPointsCheckbox: OptionCheckboxControl;
@@ -134,6 +135,7 @@ function refreshLegend(controls: LayerToggleControls): void {
 function applyMapLayers(controls: LayerToggleControls): void {
   toggleLayer(
     controls.activeSelection,
+    controls.orthoCheckbox.checkbox.checked,
     controls.densityKdeCheckbox.checkbox.checked,
     controls.detectionPointsCheckbox.checkbox.checked,
   );
@@ -163,6 +165,7 @@ function applyLayerSelection(
   applyMapLayers(controls);
 
   const isDiffMode = activeSelection === 'diff';
+  controls.orthoCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
   controls.densityKdeCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
   controls.diffKdeCheckbox.wrapper.classList.toggle('hidden', !isDiffMode);
   updateDetectionCheckboxAvailability(controls);
@@ -240,10 +243,12 @@ export function setupLayerToggle(container: HTMLElement): void {
   const separator = document.createElement('div');
   separator.className = 'border-t border-slate-200 my-3';
 
+  const orthoCheckbox = createOptionCheckbox('Pokaż ortofotomapę');
   const densityKdeCheckbox = createOptionCheckbox('Pokaż zagęszczenie pojazdów (KDE)');
   const detectionPointsCheckbox = createOptionCheckbox('Pokaż punkty detekcji pojazdów');
   const diffKdeCheckbox = createOptionCheckbox('Pokaż bilans zmian gęstości (KDE)');
 
+  orthoCheckbox.checkbox.checked = true;
   densityKdeCheckbox.checkbox.checked = true;
   detectionPointsCheckbox.checkbox.checked = true;
   diffKdeCheckbox.checkbox.checked = true;
@@ -251,11 +256,16 @@ export function setupLayerToggle(container: HTMLElement): void {
 
   const controls: LayerToggleControls = {
     buttons,
+    orthoCheckbox,
     densityKdeCheckbox,
     diffKdeCheckbox,
     detectionPointsCheckbox,
     activeSelection: '2025',
   };
+
+  orthoCheckbox.checkbox.addEventListener('change', () => {
+    applyMapLayers(controls);
+  });
 
   densityKdeCheckbox.checkbox.addEventListener('change', () => {
     applyMapLayers(controls);
@@ -290,6 +300,7 @@ export function setupLayerToggle(container: HTMLElement): void {
 
   wrapper.appendChild(buttonGroup);
   wrapper.appendChild(separator);
+  wrapper.appendChild(orthoCheckbox.wrapper);
   wrapper.appendChild(densityKdeCheckbox.wrapper);
   wrapper.appendChild(detectionPointsCheckbox.wrapper);
   wrapper.appendChild(diffKdeCheckbox.wrapper);
