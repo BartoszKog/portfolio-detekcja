@@ -27,6 +27,7 @@ export type { OrthoYear } from './detectionCoordinates';
 export type LayerMode = OrthoYear | 'diff';
 
 export const DETECTION_MIN_ZOOM = 16;
+export const DYNAMIC_ZOOM_THRESHOLD = 17;
 export const DETECTION_POINT_FILL = 'rgba(59, 130, 246, 0.85)';
 export const DETECTION_POINT_STROKE = '#ffffff';
 

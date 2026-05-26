@@ -1,4 +1,6 @@
 import {
+  DYNAMIC_ZOOM_THRESHOLD,
+  getCurrentZoom,
   isDetectionZoomAvailable,
   setDiffHeatmapVisible,
   subscribeToViewChange,
@@ -12,6 +14,12 @@ interface LayerOption {
   selection: LayerSelection;
   label: string;
   shortLabel: string;
+}
+
+interface EffectiveLayerVisibility {
+  ortho: boolean;
+  kde: boolean;
+  detection: boolean;
 }
 
 const LAYER_OPTIONS: LayerOption[] = [
@@ -76,12 +84,16 @@ interface OptionCheckboxControl {
 
 interface LayerToggleControls {
   buttons: Map<LayerSelection, HTMLButtonElement>;
+  dynamicLayersCheckbox: OptionCheckboxControl;
+  dynamicSeparator: HTMLDivElement;
   orthoCheckbox: OptionCheckboxControl;
   densityKdeCheckbox: OptionCheckboxControl;
   diffKdeCheckbox: OptionCheckboxControl;
   detectionPointsCheckbox: OptionCheckboxControl;
   activeSelection: LayerSelection;
 }
+
+let isSyncingCheckboxes = false;
 
 function createOptionCheckbox(labelText: string): OptionCheckboxControl {
   const wrapper = document.createElement('div');
@@ -103,6 +115,44 @@ function createOptionCheckbox(labelText: string): OptionCheckboxControl {
   return { wrapper, checkbox };
 }
 
+function setCheckboxChecked(checkbox: HTMLInputElement, checked: boolean): void {
+  if (checkbox.checked === checked) {
+    return;
+  }
+
+  isSyncingCheckboxes = true;
+  checkbox.checked = checked;
+  isSyncingCheckboxes = false;
+}
+
+function isDynamicLayersActive(controls: LayerToggleControls): boolean {
+  return (
+    controls.dynamicLayersCheckbox.checkbox.checked && controls.activeSelection !== 'diff'
+  );
+}
+
+function getDynamicLayerVisibility(): EffectiveLayerVisibility {
+  const zoom = getCurrentZoom();
+
+  if (zoom > DYNAMIC_ZOOM_THRESHOLD) {
+    return { ortho: true, kde: false, detection: true };
+  }
+
+  return { ortho: false, kde: true, detection: false };
+}
+
+function getEffectiveLayerVisibility(controls: LayerToggleControls): EffectiveLayerVisibility {
+  if (isDynamicLayersActive(controls)) {
+    return getDynamicLayerVisibility();
+  }
+
+  return {
+    ortho: controls.orthoCheckbox.checkbox.checked,
+    kde: controls.densityKdeCheckbox.checkbox.checked,
+    detection: controls.detectionPointsCheckbox.checkbox.checked,
+  };
+}
+
 function getGradientLegendType(
   activeSelection: LayerSelection,
   densityChecked: boolean,
@@ -120,16 +170,17 @@ function shouldShowDetectionLegend(controls: LayerToggleControls): boolean {
     return false;
   }
 
-  return (
-    controls.detectionPointsCheckbox.checkbox.checked && isDetectionZoomAvailable()
-  );
+  const { detection } = getEffectiveLayerVisibility(controls);
+  return detection && isDetectionZoomAvailable();
 }
 
 function refreshLegend(controls: LayerToggleControls): void {
+  const { kde } = getEffectiveLayerVisibility(controls);
+
   updateLegend({
     gradientType: getGradientLegendType(
       controls.activeSelection,
-      controls.densityKdeCheckbox.checkbox.checked,
+      kde,
       controls.diffKdeCheckbox.checkbox.checked,
     ),
     showDetection: shouldShowDetectionLegend(controls),
@@ -137,12 +188,42 @@ function refreshLegend(controls: LayerToggleControls): void {
 }
 
 function applyMapLayers(controls: LayerToggleControls): void {
-  toggleLayer(
-    controls.activeSelection,
-    controls.orthoCheckbox.checkbox.checked,
-    controls.densityKdeCheckbox.checkbox.checked,
-    controls.detectionPointsCheckbox.checkbox.checked,
-  );
+  const { ortho, kde, detection } = getEffectiveLayerVisibility(controls);
+
+  toggleLayer(controls.activeSelection, ortho, kde, detection);
+}
+
+function syncDynamicLayerCheckboxIndicators(controls: LayerToggleControls): void {
+  if (!isDynamicLayersActive(controls)) {
+    return;
+  }
+
+  const { ortho, kde, detection } = getDynamicLayerVisibility();
+
+  setCheckboxChecked(controls.orthoCheckbox.checkbox, ortho);
+  setCheckboxChecked(controls.densityKdeCheckbox.checkbox, kde);
+  setCheckboxChecked(controls.detectionPointsCheckbox.checkbox, detection);
+}
+
+function updateManualCheckboxAvailability(controls: LayerToggleControls): void {
+  const isDynamic = isDynamicLayersActive(controls);
+  const manualCheckboxes = [
+    controls.orthoCheckbox,
+    controls.densityKdeCheckbox,
+    controls.detectionPointsCheckbox,
+  ];
+
+  for (const control of manualCheckboxes) {
+    control.wrapper.classList.toggle('opacity-60', isDynamic);
+    control.wrapper.classList.toggle('pointer-events-none', isDynamic);
+    control.checkbox.disabled = false;
+    control.checkbox.tabIndex = isDynamic ? -1 : 0;
+    control.checkbox.setAttribute('aria-readonly', String(isDynamic));
+  }
+
+  if (isDynamic) {
+    syncDynamicLayerCheckboxIndicators(controls);
+  }
 }
 
 function updateDetectionCheckboxAvailability(controls: LayerToggleControls): void {
@@ -151,7 +232,7 @@ function updateDetectionCheckboxAvailability(controls: LayerToggleControls): voi
 
   wrapper.classList.toggle('hidden', !isOrthoMode);
 
-  if (!isOrthoMode) {
+  if (!isOrthoMode || isDynamicLayersActive(controls)) {
     return;
   }
 
@@ -161,20 +242,59 @@ function updateDetectionCheckboxAvailability(controls: LayerToggleControls): voi
   checkbox.disabled = !zoomAvailable;
 }
 
+function updateOrthoModeCheckboxVisibility(controls: LayerToggleControls): void {
+  const isDiffMode = controls.activeSelection === 'diff';
+
+  controls.dynamicLayersCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
+  controls.dynamicSeparator.classList.toggle('hidden', isDiffMode);
+  controls.orthoCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
+  controls.densityKdeCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
+  controls.detectionPointsCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
+  controls.diffKdeCheckbox.wrapper.classList.toggle('hidden', !isDiffMode);
+}
+
+function handleDynamicLayersChange(controls: LayerToggleControls): void {
+  if (isSyncingCheckboxes) {
+    return;
+  }
+
+  updateManualCheckboxAvailability(controls);
+  applyMapLayers(controls);
+  updateDetectionCheckboxAvailability(controls);
+  refreshLegend(controls);
+}
+
+function handleManualLayerChange(controls: LayerToggleControls): void {
+  if (isSyncingCheckboxes || isDynamicLayersActive(controls)) {
+    return;
+  }
+
+  const manualChecked =
+    controls.orthoCheckbox.checkbox.checked ||
+    controls.densityKdeCheckbox.checkbox.checked ||
+    controls.detectionPointsCheckbox.checkbox.checked;
+
+  if (manualChecked) {
+    setCheckboxChecked(controls.dynamicLayersCheckbox.checkbox, false);
+  }
+
+  applyMapLayers(controls);
+  updateManualCheckboxAvailability(controls);
+  updateDetectionCheckboxAvailability(controls);
+  refreshLegend(controls);
+}
+
 function applyLayerSelection(
   activeSelection: LayerSelection,
   controls: LayerToggleControls,
 ): void {
   controls.activeSelection = activeSelection;
+  updateOrthoModeCheckboxVisibility(controls);
   applyMapLayers(controls);
-
-  const isDiffMode = activeSelection === 'diff';
-  controls.orthoCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
-  controls.densityKdeCheckbox.wrapper.classList.toggle('hidden', isDiffMode);
-  controls.diffKdeCheckbox.wrapper.classList.toggle('hidden', !isDiffMode);
+  updateManualCheckboxAvailability(controls);
   updateDetectionCheckboxAvailability(controls);
 
-  if (isDiffMode) {
+  if (activeSelection === 'diff') {
     setDiffHeatmapVisible(controls.diffKdeCheckbox.checkbox.checked);
   }
 
@@ -278,6 +398,9 @@ export function setupLayerToggle(
   const separator = document.createElement('div');
   separator.className = 'border-t border-slate-300 my-3';
 
+  const dynamicSeparator = document.createElement('div');
+  dynamicSeparator.className = 'border-t border-slate-300 my-2';
+
   const optionsWrapper = document.createElement('div');
   optionsWrapper.className = 'flex flex-col gap-2';
 
@@ -285,11 +408,15 @@ export function setupLayerToggle(
   optionsTitle.className = 'text-xs font-semibold uppercase tracking-wide text-slate-500';
   optionsTitle.textContent = 'Widoczność warstw';
 
+  const dynamicLayersCheckbox = createOptionCheckbox(
+    'Dynamiczna widoczność warstw (zależna od zoomu)',
+  );
   const orthoCheckbox = createOptionCheckbox('Pokaż ortofotomapę');
   const densityKdeCheckbox = createOptionCheckbox('Pokaż zagęszczenie pojazdów (KDE)');
   const detectionPointsCheckbox = createOptionCheckbox('Pokaż punkty detekcji pojazdów');
   const diffKdeCheckbox = createOptionCheckbox('Pokaż bilans zmian gęstości (KDE)');
 
+  dynamicLayersCheckbox.checkbox.checked = true;
   orthoCheckbox.checkbox.checked = true;
   densityKdeCheckbox.checkbox.checked = true;
   detectionPointsCheckbox.checkbox.checked = true;
@@ -298,6 +425,8 @@ export function setupLayerToggle(
 
   const controls: LayerToggleControls = {
     buttons,
+    dynamicLayersCheckbox,
+    dynamicSeparator,
     orthoCheckbox,
     densityKdeCheckbox,
     diffKdeCheckbox,
@@ -311,18 +440,20 @@ export function setupLayerToggle(
     applyPanelToggleState(optionsContainer, optionsToggleButton, isOptionsPanelOpen);
   });
 
+  dynamicLayersCheckbox.checkbox.addEventListener('change', () => {
+    handleDynamicLayersChange(controls);
+  });
+
   orthoCheckbox.checkbox.addEventListener('change', () => {
-    applyMapLayers(controls);
+    handleManualLayerChange(controls);
   });
 
   densityKdeCheckbox.checkbox.addEventListener('change', () => {
-    applyMapLayers(controls);
-    refreshLegend(controls);
+    handleManualLayerChange(controls);
   });
 
   detectionPointsCheckbox.checkbox.addEventListener('change', () => {
-    applyMapLayers(controls);
-    refreshLegend(controls);
+    handleManualLayerChange(controls);
   });
 
   diffKdeCheckbox.checkbox.addEventListener('change', () => {
@@ -331,6 +462,11 @@ export function setupLayerToggle(
   });
 
   subscribeToViewChange(() => {
+    if (isDynamicLayersActive(controls)) {
+      syncDynamicLayerCheckboxIndicators(controls);
+      applyMapLayers(controls);
+    }
+
     updateDetectionCheckboxAvailability(controls);
     refreshLegend(controls);
   });
@@ -356,6 +492,8 @@ export function setupLayerToggle(
   optionsWrapper.append(
     optionsTitle,
     separator,
+    dynamicLayersCheckbox.wrapper,
+    dynamicSeparator,
     orthoCheckbox.wrapper,
     densityKdeCheckbox.wrapper,
     detectionPointsCheckbox.wrapper,
