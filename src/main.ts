@@ -1,8 +1,11 @@
 import './style.css';
 import { MapController } from './map/MapController';
+import { setupHero } from './ui/setupHero';
 import { setupLegend } from './ui/Legend';
 import { setupLayerToggle } from './ui/LayerToggle';
 import { setupScaleLine } from './ui/ScaleLine';
+
+setupHero();
 
 /**
  * Orthophotomaps are delivered as compressed WMTS tiles by the MSIP service,
