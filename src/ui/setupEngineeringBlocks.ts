@@ -239,6 +239,90 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
       },
     ],
   },
+  {
+    title: 'Trening modelu i wdrożenie inferencji',
+    subsections: [
+      {
+        title: 'Rygorystyczny podział danych i bilansowanie tła',
+        paragraphs: [
+          {
+            text: 'Aby zapewnić wiarygodność ewaluacji i uniknąć krytycznego błędu wycieku danych (data leakage), podczas przygotowywania danych rygorystycznie zachowano oryginalny podział zbioru EAGLE na podzbiory uczący, walidacyjny i testowy. Co więcej, proces kafelkowania (Tiling) gigantycznych ortofotomap wygenerował ogromną liczbę „pustych” okien – przedstawiających wyłącznie dachy, zieleń czy wodę. Aby zapobiec zjawisku, w którym sieć faworyzuje klasę tła i uczy się zachowawczości (spadek czułości modelu), zastosowano inżynieryjne filtrowanie zbioru. Nadmiarowe kafelki bez obiektów zostały odrzucone w proporcji zapewniającej zdrowy balans pomiędzy obrazami tła a obrazami zawierającymi pojazdy.',
+          },
+        ],
+        figure: {
+          src: '/assets/results_training.png.png',
+          alt: 'Wykresy metryk i funkcji straty z logów treningowych modelu YOLO11',
+          caption: 'Wykresy z logów treningowych — metryki mAP oraz stabilizacja funkcji straty w kolejnych epokach.',
+          maxWidth: '45rem',
+        },
+      },
+      {
+        title: 'Transfer Learning i stabilizacja modelu',
+        paragraphs: [
+          {
+            text: 'Model YOLO11 Nano został poddany procesowi douczania (fine-tuning) z wykorzystaniem wag wstępnie wytrenowanych na potężnym, lotniczym zbiorze {DOTA}. Zastosowanie uczenia transferowego z domeny tak zbliżonej wizualnie pozwoliło na błyskawiczną konwergencję sieci.',
+            links: [
+              {
+                label: 'DOTA',
+                href: 'https://doi.org/10.1109/TPAMI.2021.3117983',
+              },
+            ],
+          },
+          {
+            text: 'Jak pokazują logi treningowe, wysokie metryki mAP odnotowano już po pierwszej epoce, co jednoznacznie dowodzi, że wagi startowe z modelu {DOTA} były znakomicie dopasowane do specyfiki nowego zadania. W rezultacie model niezwykle szybko ustabilizował funkcje straty (box_loss, cls_loss) i osiągnął świetne rezultaty na zbiorze walidacyjnym. Pełne 50 epok treningu pozwoliło na precyzyjne doszlifowanie detekcji, poprawiając ostateczny wynik mAP50 o około 0.025 w stosunku do obiecującego punktu wyjścia.',
+            links: [
+              {
+                label: 'DOTA',
+                href: 'https://doi.org/10.1109/TPAMI.2021.3117983',
+              },
+            ],
+          },
+        ],
+      },
+      {
+        title: 'Architektura wnioskowania GIS',
+        paragraphs: [
+          {
+            text: 'Samo wytrenowanie modelu to jednak dopiero połowa sukcesu – prawdziwym wyzwaniem inżynierskim było wdrożenie go do pracy na surowych arkuszach GeoTIFF (o boku nierzadko przekraczającym 20&nbsp;000 pikseli na GSD 5 cm). Biblioteka {SAHI} jest niezbędna do kafelkowania z zakładką podczas predykcji, jednak wczytanie tak gigantycznego obrazu w całości do pamięci RAM kończy się jej natychmiastowym przepełnieniem (Out of Memory).',
+            links: [
+              {
+                label: 'SAHI',
+                href: 'https://github.com/obss/sahi',
+              },
+            ],
+          },
+          {
+            text: 'Aby to obejść, system wnioskujący został zaprojektowany z wykorzystaniem odczytu sektorowego. Za pomocą biblioteki {rasterio} potężny obraz jest wczytywany i przekazywany do SAHI iteracyjnie, w mniejszych, bezpiecznych dla pamięci blokach. Bezpośrednio po detekcji następuje kluczowy etap integracji GIS – poligonowe wyniki sieci (zapisane w lokalnych współrzędnych pikselowych kafelka) są w locie transformowane na globalne, rzeczywiste współrzędne przestrzenne, wykorzystując macierz transformacji afinicznej oryginalnego rastra.',
+            links: [
+              {
+                label: 'rasterio',
+                href: 'https://rasterio.readthedocs.io/',
+              },
+            ],
+          },
+          {
+            text: 'Aby zmaksymalizować przepustowość całego systemu, sam model wizyjny wyeksportowano do silnika {TensorRT} i poddano kwantyzacji do precyzji FP16. Ta sprzętowa optymalizacja zredukowała rozmiar wag o połowę i drastycznie przyspieszyła wnioskowanie GPU – z poziomu ok. 40 FPS (natywny PyTorch) do ponad 147 FPS bez żadnej straty na jakości detekcji. Ze względu na stosowanie marginesów nakładania (w sektorach odczytu rasterio), na stykach analizowanych okien siłą rzeczy powstawały zduplikowane detekcje. Zostały one na samym końcu precyzyjnie usunięte za pomocą algorytmów opartych na drzewach przestrzennych ({cKDTree}), stosując promień wyszukiwania 1,8 metra.',
+            links: [
+              {
+                label: 'TensorRT',
+                href: 'https://docs.ultralytics.com/integrations/tensorrt#tensorrt',
+              },
+              {
+                label: 'cKDTree',
+                href: 'https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.cKDTree.html',
+              },
+            ],
+          },
+        ],
+        figure: {
+          src: '/assets/graphviz.png',
+          alt: 'Schemat architektury pipeline inferencji na ortofotomapach wysokorozdzielczych',
+          caption: 'Schemat architektury wnioskowania — od odczytu okienkowego GeoTIFF, przez inferencję SAHI, TensorRT FP16, po deduplikację detekcji metodą cKDTree.',
+          maxWidth: '42rem',
+        },
+      },
+    ],
+  },
 ];
 
 /**
