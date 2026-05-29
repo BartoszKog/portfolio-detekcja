@@ -126,6 +126,39 @@ body {
     aspect-ratio: 16 / 10;
     max-height: min(780px, 72svh);
   }
+
+  .site-footer {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(to bottom, #f8fafc 0%, #f1f5f9 55%, #e9eef5 100%);
+  }
+
+  .site-footer::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(circle at 18% 20%, rgb(99 102 241 / 0.14) 0, transparent 48%),
+      radial-gradient(circle at 82% 75%, rgb(16 185 129 / 0.12) 0, transparent 42%),
+      radial-gradient(circle at 55% 100%, rgb(168 85 247 / 0.1) 0, transparent 46%);
+  }
+
+  .site-footer::after {
+    content: '';
+    position: absolute;
+    inset-inline: 0;
+    top: 0;
+    height: 1px;
+    pointer-events: none;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgb(148 163 184 / 0.4) 25%,
+      rgb(148 163 184 / 0.4) 75%,
+      transparent 100%
+    );
+  }
 }
 
 #map {
