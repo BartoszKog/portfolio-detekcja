@@ -1,5 +1,6 @@
 import './style.css';
 import { MapController } from './map/MapController';
+import { revealApp } from './ui/setupAppLoader';
 import { setupEngineeringBlocks } from './ui/setupEngineeringBlocks';
 import { setupHero } from './ui/setupHero';
 import { setupLegend } from './ui/Legend';
@@ -8,6 +9,7 @@ import { setupScaleLine } from './ui/ScaleLine';
 
 setupHero();
 setupEngineeringBlocks();
+revealApp();
 
 /**
  * Orthophotomaps are delivered as compressed WMTS tiles by the MSIP service,

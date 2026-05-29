@@ -5,8 +5,65 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Wykrywanie Pojazdów - Kraków</title>
+    <style>
+      html:not(.app-ready) body {
+        overflow: hidden;
+      }
+
+      html:not(.app-ready) body > main,
+      html:not(.app-ready) body > footer {
+        visibility: hidden;
+      }
+
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        background: #f8fafc;
+        transition: opacity 0.35s ease, visibility 0.35s ease;
+      }
+
+      html.app-ready #app-loader {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      .app-loader-spinner {
+        width: 2.75rem;
+        height: 2.75rem;
+        border: 3px solid #e2e8f0;
+        border-top-color: #4f46e5;
+        border-radius: 50%;
+        animation: app-loader-spin 0.75s linear infinite;
+      }
+
+      .app-loader-label {
+        margin: 0;
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #64748b;
+        letter-spacing: 0.01em;
+      }
+
+      @keyframes app-loader-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
   </head>
   <body class="bg-slate-50 text-slate-800 font-sans">
+    <div id="app-loader" role="status" aria-live="polite" aria-label="Ładowanie strony">
+      <div class="app-loader-spinner" aria-hidden="true"></div>
+      <p class="app-loader-label">Ładowanie…</p>
+    </div>
     <main>
       <section id="hero" class="hero">
         <div class="page-container">
