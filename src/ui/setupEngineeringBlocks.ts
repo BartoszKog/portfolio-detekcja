@@ -20,9 +20,23 @@ interface EngineeringParagraph {
   links?: EngineeringLink[];
 }
 
+interface EngineeringBullet {
+  title: string;
+  text: string;
+}
+
+interface EngineeringAction {
+  label: string;
+  href: string;
+  icon?: string;
+  variant?: 'indigo' | 'emerald';
+}
+
 interface EngineeringSubsection {
   title: string;
   paragraphs: EngineeringParagraph[];
+  bullets?: EngineeringBullet[];
+  actions?: EngineeringAction[];
   figure?: EngineeringFigure;
 }
 
@@ -33,6 +47,21 @@ interface EngineeringBlock {
 
 const EXTERNAL_LINK_CLASS =
   'font-semibold text-indigo-700 underline decoration-indigo-300 underline-offset-2 transition hover:text-indigo-900';
+
+const ACTION_BUTTON_CLASSES: Record<NonNullable<EngineeringAction['variant']>, string> = {
+  indigo:
+    'inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-5 py-2.5 text-sm font-semibold text-indigo-800 shadow-sm transition hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2',
+  emerald:
+    'inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-5 py-2.5 text-sm font-semibold text-emerald-800 shadow-sm transition hover:bg-emerald-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-2',
+};
+
+/** External URLs for the resources block — update before publishing. */
+const RESOURCE_HREFS = {
+  github:
+    'https://github.com/BartoszKog/portfolio-detekcja/tree/main/ml_research/Kod_zrodlowy_Kogutowicz',
+  roboflowGsd5cm: 'https://universe.roboflow.com/projectagh/krakow-aerial-vehicles-gsd_0_05m',
+  roboflowGsd10cm: 'https://universe.roboflow.com/projectagh/krakow-aerial-vehicles-gsd_0_1m',
+} as const;
 
 /** Decodes HTML entities such as &nbsp; into real Unicode characters. */
 function decodeHtmlEntities(text: string): string {
@@ -117,6 +146,49 @@ function appendFigure(container: HTMLElement, figure: EngineeringFigure): void {
   container.append(figureElement);
 }
 
+function appendBulletList(container: HTMLElement, bullets: EngineeringBullet[]): void {
+  const list = document.createElement('ul');
+  list.className = 'space-y-3 text-sm leading-relaxed text-slate-700';
+
+  for (const bullet of bullets) {
+    const item = document.createElement('li');
+
+    const title = document.createElement('strong');
+    title.className = 'text-slate-900';
+    title.textContent = `${bullet.title}: `;
+
+    item.append(title, decodeHtmlEntities(bullet.text));
+    list.append(item);
+  }
+
+  container.append(list);
+}
+
+function appendActions(container: HTMLElement, actions: EngineeringAction[]): void {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'flex flex-wrap gap-3 pt-1';
+
+  for (const action of actions) {
+    const anchor = document.createElement('a');
+    anchor.href = action.href;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.className = ACTION_BUTTON_CLASSES[action.variant ?? 'indigo'];
+
+    if (action.icon) {
+      const icon = document.createElement('span');
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = action.icon;
+      anchor.append(icon);
+    }
+
+    anchor.append(decodeHtmlEntities(action.label));
+    wrapper.append(anchor);
+  }
+
+  container.append(wrapper);
+}
+
 function renderSubsection(subsection: EngineeringSubsection): HTMLElement {
   const article = document.createElement('article');
   article.className = 'space-y-4';
@@ -137,7 +209,15 @@ function renderSubsection(subsection: EngineeringSubsection): HTMLElement {
     }
   }
 
+  if (subsection.bullets && subsection.bullets.length > 0) {
+    appendBulletList(body, subsection.bullets);
+  }
+
   article.append(body);
+
+  if (subsection.actions && subsection.actions.length > 0) {
+    appendActions(article, subsection.actions);
+  }
 
   if (subsection.figure) {
     appendFigure(article, subsection.figure);
@@ -172,6 +252,8 @@ function renderEngineeringBlock(block: EngineeringBlock): HTMLElement {
  * 3. Add one or more `subsections`, each with:
  *    - `title` — subheading,
  *    - `paragraphs` — array of `{ text, links? }`,
+ *    - optional `bullets` — array of `{ title, text }` for labelled list items,
+ *    - optional `actions` — array of `{ label, href, icon?, variant? }` CTA buttons,
  *    - optional `figure` — `{ src, alt, caption, maxWidth? }`.
  *
  * Links: use `{Label}` in `text` and define matching `label` + `href` in `links`.
@@ -356,6 +438,76 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           caption: 'Krzywa F1-Confidence dla GSD 5 cm — optymalny próg pewności 0,136 na autorskim zbiorze walidacyjnym z ortofotomapy 2025.',
           maxWidth: '35rem',
         },
+      },
+    ],
+  },
+  {
+    title: 'Zasoby projektowe i kod źródłowy',
+    subsections: [
+      {
+        title: 'Dokumentacja potoku inżynierskiego (GitHub)',
+        paragraphs: [
+          {
+            text: 'Ze względu na ograniczenia licencyjne wykorzystanego zbioru EAGLE oraz gigantyczny rozmiar surowych plików rastrowych (kilkaset gigabajtów), pełne odtworzenie treningu metodą plug-and-play nie jest możliwe. Cały kod źródłowy udostępniam jednak do wglądu w formie uporządkowanych notatników Jupyter. Zachowano w nich oryginalne wyjścia komórek ze środowiska obliczeniowego, co stanowi transparentną dokumentację rzeczywistego przebiegu eksperymentów.',
+          },
+          {
+            text: 'Repozytorium zostało podzielone na cztery logiczne moduły odzwierciedlające cykl życia modelu:',
+          },
+        ],
+        bullets: [
+          {
+            title: 'Preprocessing',
+            text: 'Autorskie skrypty konwertujące surowe etykiety XML do formatu YOLO OBB, algorytmy kafelkowania obrazów z zakładką oraz mechanizmy oczyszczania danych z nadmiaru tła.',
+          },
+          {
+            title: 'Training',
+            text: 'Dokumentacja eksperymentów douczania (Fine-tuning) dla architektury YOLO11. Testowano zarówno model Nano (przy 50 i 100 epokach), jak i model Medium z zamrożonym szkieletem (frozen backbone).',
+          },
+          {
+            title: 'Evaluation',
+            text: 'Walidacja wyników na laboratoryjnym zbiorze testowym oraz na rzeczywistych danych z Geoportalu (wyznaczanie krzywych F1). Zintegrowano tu również kod eksportu modelu do formatu TensorRT i benchmarki wydajności (FPS).',
+          },
+          {
+            title: 'Inference',
+            text: 'Zintegrowany silnik wnioskujący GIS. Potok realizuje odczyt okienkowy GeoTIFF, wnioskowanie na akceleratorze (SAHI + TensorRT), filtrację przestrzenną duplikatów (cKDTree) i eksport ostatecznych geometrii do formatu GeoJSON.',
+          },
+        ],
+        actions: [
+          {
+            icon: '📂',
+            label: 'Zobacz kod źródłowy na GitHubie',
+            href: RESOURCE_HREFS.github,
+            variant: 'indigo',
+          },
+        ],
+      },
+      {
+        title: 'Otwarte dane walidacyjne (Roboflow Universe)',
+        paragraphs: [
+          {
+            text: 'W ramach wspierania otwartych danych badawczych, udostępniam autorskie zbiory walidacyjne wycięte z map Krakowa, które posłużyły do wyznaczenia adaptacyjnego progu pewności dla tego projektu. Zbiory zostały zaanotowane półautomatycznie przy pomocy modelu Segment Anything (SAM) i poddane ręcznej korekcie.',
+          },
+          {
+            text: 'Zbiór walidacyjny Kraków (GSD 5 cm): Wykorzystany do kalibracji głównego modelu działającego na powyższej mapie interaktywnej z roku 2023 i 2025.',
+          },
+          {
+            text: 'Zbiór walidacyjny Kraków (GSD 10 cm): Dodatkowy, trudniejszy zbiór z historycznych ortofotomap (2013), służący w projekcie do testowania odporności modelu na dane niższej jakości.',
+          },
+        ],
+        actions: [
+          {
+            icon: '📊',
+            label: 'Zbiór Roboflow GSD 5 cm',
+            href: RESOURCE_HREFS.roboflowGsd5cm,
+            variant: 'emerald',
+          },
+          {
+            icon: '📊',
+            label: 'Zbiór Roboflow GSD 10 cm',
+            href: RESOURCE_HREFS.roboflowGsd10cm,
+            variant: 'emerald',
+          },
+        ],
       },
     ],
   },
