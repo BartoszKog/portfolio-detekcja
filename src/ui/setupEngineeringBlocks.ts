@@ -63,6 +63,10 @@ const RESOURCE_HREFS = {
   roboflowGsd10cm: 'https://universe.roboflow.com/projectagh/krakow-aerial-vehicles-gsd_0_1m',
 } as const;
 
+function assetUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}${path}`;
+}
+
 /** Decodes HTML entities such as &nbsp; into real Unicode characters. */
 function decodeHtmlEntities(text: string): string {
   const element = document.createElement('textarea');
@@ -260,7 +264,8 @@ function renderEngineeringBlock(block: EngineeringBlock): HTMLElement {
  * Example: text: '… architekturze {SAHI} …', links: [{ label: 'SAHI', href: 'https://…' }].
  *
  * Typography: HTML entities work in text and captions, e.g. `20&nbsp;000` (non-breaking space).
- * Images: place files in `public/assets/`. Optional `maxWidth` caps width on large screens
+ * Images: place files in `public/assets/` and resolve them with `assetUrl`.
+ * Optional `maxWidth` caps width on large screens
  * (CSS length, e.g. `'35rem'`); omit to use DEFAULT_FIGURE_MAX_WIDTH above.
  */
 const ENGINEERING_BLOCKS: EngineeringBlock[] = [
@@ -290,7 +295,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           },
         ],
         figure: {
-          src: '/assets/fig_comparison.png',
+          src: assetUrl('assets/fig_comparison.png'),
           alt: 'Schemat porównania ramek HBB i OBB na ortofotomapie miejskiej',
           caption: 'Porównanie metod reprezentacji obiektów w detekcji. Panel (A) przedstawia schemat geometryczny z uwzględnieniem kąta rotacji θ. Panel (B) ilustruje weryfikację na rzeczywistym obrazie: ramki zorientowane (OBB czerwone) precyzyjnie separują sąsiednie pojazdy, podczas gdy standardowe ramki horyzontalne (HBB– niebieskie) generują silne przekrycia i nadmiar tła.',
           maxWidth: '35rem',
@@ -313,7 +318,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           },
         ],
         figure: {
-          src: '/assets/tiling.png',
+          src: assetUrl('assets/tiling.png'),
           alt: 'Schemat kafelkowania wysokorozdzielczego obrazu ortofotomapy z zakładką',
           caption: 'Schemat ideowy procesu kafelkowania z zastosowaniem zakładki. Zielony obszar oznacza część wspólną dwóch sąsiednich wycinków. Czerwony obiekt, znajdujący się na granicy pierwszego kafla, dzięki zakładce zostaje w całości objęty przez drugi kafel, co zapobiega jego przecięciu.',
           maxWidth: '35rem',
@@ -332,7 +337,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           },
         ],
         figure: {
-          src: '/assets/results_training.png.png',
+          src: assetUrl('assets/results_training.png.png'),
           alt: 'Wykresy metryk i funkcji straty z logów treningowych modelu YOLO11',
           caption: 'Wykresy z logów treningowych — metryki mAP oraz stabilizacja funkcji straty w kolejnych epokach.',
           maxWidth: '45rem',
@@ -397,7 +402,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           },
         ],
         figure: {
-          src: '/assets/graphviz.png',
+          src: assetUrl('assets/graphviz.png'),
           alt: 'Schemat architektury pipeline inferencji na ortofotomapach wysokorozdzielczych',
           caption: 'Schemat architektury wnioskowania — od odczytu okienkowego GeoTIFF, przez inferencję SAHI, TensorRT FP16, po deduplikację detekcji metodą cKDTree.',
           maxWidth: '42rem',
@@ -416,7 +421,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           },
         ],
         figure: {
-          src: '/assets/PR_curve.png',
+          src: assetUrl('assets/PR_curve.png'),
           alt: 'Krzywa Precyzja-Czułość modelu YOLO11 OBB na zbiorze testowym',
           caption: 'Krzywa Precyzja-Czułość — mAP@50 powyżej 0,97 na niezależnym zbiorze testowym EAGLE.',
           maxWidth: '35rem',
@@ -433,7 +438,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           },
         ],
         figure: {
-          src: '/assets/BoxF1_curve_2025val.png',
+          src: assetUrl('assets/BoxF1_curve_2025val.png'),
           alt: 'Krzywa F1-Confidence dla walidacji na ortofotomapie Krakowa GSD 5 cm',
           caption: 'Krzywa F1-Confidence dla GSD 5 cm — optymalny próg pewności 0,136 na autorskim zbiorze walidacyjnym z ortofotomapy 2025.',
           maxWidth: '35rem',
