@@ -164,12 +164,57 @@ body {
     @apply p-0;
   }
 
+  .page-intro-text {
+    @apply text-base leading-relaxed text-slate-600 md:text-lg;
+  }
+
+  .post-hero-inner {
+    @apply flex flex-col gap-6;
+  }
+
+  .post-hero-layout--margin-mode .post-hero-inner {
+    @apply gap-0;
+  }
+
+  .post-hero-layout--split .post-hero-inner {
+    @apply grid items-start gap-x-8 gap-y-0;
+    grid-template-columns: minmax(0, max-content) minmax(0, 1fr);
+  }
+
+  .post-hero-layout--split #page-toc-slot {
+    @apply col-start-1 row-start-1;
+  }
+
+  .post-hero-layout--split #page-intro {
+    @apply col-start-2 row-start-1;
+  }
+
+  .post-hero-layout--stacked #page-intro {
+    @apply order-1;
+  }
+
+  .post-hero-layout--stacked #page-toc-slot {
+    @apply order-2;
+  }
+
+  .post-hero-layout--split .page-toc-list {
+    @apply grid-cols-1;
+  }
+
+  .post-hero-layout--stacked .post-hero-inner {
+    @apply flex flex-col;
+  }
+
   .page-toc-heading {
     @apply mb-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500;
   }
 
   .page-toc-list {
     @apply m-0 grid list-none grid-cols-1 gap-x-8 gap-y-1 p-0 sm:grid-cols-2;
+  }
+
+  .page-toc-list--measure {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
   .page-toc-sublist {
@@ -239,12 +284,6 @@ body {
 
   .page-toc--docked .page-toc-link--top {
     @apply text-sm;
-  }
-
-  .page-toc--docked .page-toc-inline-shell,
-  .page-toc--docked .page-container,
-  .page-toc--docked .content-width {
-    @apply w-full max-w-none p-0;
   }
 
   .page-toc--docked .page-toc-sublist {

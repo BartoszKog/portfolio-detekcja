@@ -12,6 +12,8 @@ interface TocNode {
 const DOCK_TOP_OFFSET_PX = 24;
 const DOCK_MIN_LEFT_MARGIN_PX = 16;
 const SIDEBAR_TOC_WIDTH_PX = 220;
+const INTRO_MIN_WIDTH_PX = 260;
+const SPLIT_GAP_PX = 24;
 const SCROLL_SPY_ROOT_MARGIN = '-20% 0px -70% 0px';
 const INTERACTIVE_MAP_TOC_ID = 'interaktywna-mapa';
 
@@ -238,6 +240,61 @@ function buildBranchChildMap(toc: HTMLElement): Map<string, string[]> {
   return branchChildMap;
 }
 
+function measureTocInlineWidth(toc: HTMLElement): number {
+  const panel = toc.querySelector<HTMLElement>('.page-toc-panel');
+  const list = toc.querySelector<HTMLElement>('.page-toc-list');
+  if (!panel) {
+    return toc.getBoundingClientRect().width;
+  }
+
+  const previousPanelWidth = panel.style.width;
+  const previousTocWidth = toc.style.width;
+  const hadMeasureClass = list?.classList.contains('page-toc-list--measure') ?? false;
+
+  panel.style.width = 'max-content';
+  toc.style.width = 'max-content';
+  list?.classList.add('page-toc-list--measure');
+
+  const width = toc.getBoundingClientRect().width;
+
+  panel.style.width = previousPanelWidth;
+  toc.style.width = previousTocWidth;
+  if (list && !hadMeasureClass) {
+    list.classList.remove('page-toc-list--measure');
+  }
+
+  return width;
+}
+
+function updatePostHeroLayout(
+  layout: HTMLElement | null,
+  toc: HTMLElement | null,
+  marginAvailable: boolean,
+): void {
+  if (!layout) {
+    return;
+  }
+
+  layout.classList.remove(
+    'post-hero-layout--margin-mode',
+    'post-hero-layout--split',
+    'post-hero-layout--stacked',
+  );
+
+  if (marginAvailable || !toc) {
+    layout.classList.add('post-hero-layout--margin-mode');
+    return;
+  }
+
+  const inner = layout.querySelector<HTMLElement>('.post-hero-inner');
+  const availableWidth = inner?.clientWidth ?? 0;
+  const tocWidth = measureTocInlineWidth(toc);
+  const canSplit =
+    availableWidth > 0 && availableWidth >= tocWidth + SPLIT_GAP_PX + INTRO_MIN_WIDTH_PX;
+
+  layout.classList.add(canSplit ? 'post-hero-layout--split' : 'post-hero-layout--stacked');
+}
+
 function updateBranchExpansion(
   toc: HTMLElement,
   activeId: string,
@@ -260,6 +317,7 @@ function updateBranchExpansion(
 function updateTocLayout(
   toc: HTMLElement,
   slot: HTMLElement,
+  postHeroLayout: HTMLElement | null,
   onDockChange: (isDocked: boolean) => void,
 ): void {
   const marginAvailable = canDockToc();
@@ -271,6 +329,8 @@ function updateTocLayout(
   toc.classList.toggle('page-toc--hidden', marginAvailable && !shouldShowDocked);
   toc.classList.toggle('page-toc--docked', shouldShowDocked);
   toc.toggleAttribute('aria-hidden', marginAvailable && !shouldShowDocked);
+
+  updatePostHeroLayout(postHeroLayout, toc, marginAvailable);
 
   if (shouldShowDocked) {
     toc.style.setProperty('--page-toc-dock-left', `${getDockLeft()}px`);
@@ -355,6 +415,7 @@ export function setupTableOfContents(): void {
   const toc = document.querySelector<HTMLElement>('#page-toc');
   const list = document.querySelector<HTMLOListElement>('#page-toc-list');
   const slot = document.querySelector<HTMLElement>('#page-toc-slot');
+  const postHeroLayout = document.querySelector<HTMLElement>('#post-hero-layout');
 
   if (!toc || !list || !slot) {
     return;
@@ -363,6 +424,7 @@ export function setupTableOfContents(): void {
   const tree = buildTocTree();
   if (tree.length === 0) {
     slot.remove();
+    updatePostHeroLayout(postHeroLayout, null, canDockToc());
     return;
   }
 
@@ -381,7 +443,7 @@ export function setupTableOfContents(): void {
   };
 
   const refreshLayout = (): void => {
-    updateTocLayout(toc, slot, () => {
+    updateTocLayout(toc, slot, postHeroLayout, () => {
       refreshBranchExpansion();
     });
   };
