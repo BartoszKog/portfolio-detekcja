@@ -269,7 +269,7 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
             ],
           },
           {
-            text: 'Jak pokazują logi treningowe, wysokie metryki mAP odnotowano już po pierwszej epoce, co jednoznacznie dowodzi, że wagi startowe z modelu {DOTA} były znakomicie dopasowane do specyfiki nowego zadania. W rezultacie model niezwykle szybko ustabilizował funkcje straty (box_loss, cls_loss) i osiągnął świetne rezultaty na zbiorze walidacyjnym. Pełne 50 epok treningu pozwoliło na precyzyjne doszlifowanie detekcji, poprawiając ostateczny wynik mAP50 o około 0.025 w stosunku do obiecującego punktu wyjścia.',
+            text: 'Jak pokazują logi treningowe, wysokie metryki mAP odnotowano już po pierwszej epoce, co jednoznacznie dowodzi, że wagi startowe z modelu {DOTA} były znakomicie dopasowane do specyfiki nowego zadania. W rezultacie model niezwykle szybko ustabilizował funkcje straty (box_loss, cls_loss) i osiągnął świetne rezultaty na zbiorze walidacyjnym. Pełne 50 epok treningu pozwoliło na precyzyjne doszlifowanie detekcji, poprawiając ostateczny wynik mAP50 o około 0,025 w stosunku do obiecującego punktu wyjścia.',
             links: [
               {
                 label: 'DOTA',
@@ -319,6 +319,42 @@ const ENGINEERING_BLOCKS: EngineeringBlock[] = [
           alt: 'Schemat architektury pipeline inferencji na ortofotomapach wysokorozdzielczych',
           caption: 'Schemat architektury wnioskowania — od odczytu okienkowego GeoTIFF, przez inferencję SAHI, TensorRT FP16, po deduplikację detekcji metodą cKDTree.',
           maxWidth: '42rem',
+        },
+      },
+    ],
+  },
+  {
+    title: 'Ewaluacja skuteczności i punkt pracy modelu',
+    subsections: [
+      {
+        title: 'Skuteczność detekcji i orientacji (Precision-Recall)',
+        paragraphs: [
+          {
+            text: 'Na niezależnym, laboratoryjnym zbiorze testowym model osiągnął wybitną skuteczność, co obrazuje krzywa Precyzja-Czułość (Precision-Recall Curve). Z wynikiem metryki mAP@50 przekraczającym 0,97 sieć udowodniła, że doskonale radzi sobie z wyzwaniem, jakim jest nie tylko sama detekcja pojazdów w gęstej tkance miejskiej, ale również poprawna predykcja kąta nachylenia zorientowanych ramek (OBB). Wartość pola pod krzywą bliska jedności potwierdza, że model rzadko gubi obiekty i utrzymuje wysoką trafność nawet przy niższych progach pewności.',
+          },
+        ],
+        figure: {
+          src: '/assets/PR_curve.png',
+          alt: 'Krzywa Precyzja-Czułość modelu YOLO11 OBB na zbiorze testowym',
+          caption: 'Krzywa Precyzja-Czułość — mAP@50 powyżej 0,97 na niezależnym zbiorze testowym EAGLE.',
+          maxWidth: '35rem',
+        },
+      },
+      {
+        title: 'Adaptacyjny próg pewności dla GSD 5 cm (F1-Score)',
+        paragraphs: [
+          {
+            text: 'Wysoka skuteczność laboratoryjna wymagała jednak odpowiedniej kalibracji pod wdrożenie produkcyjne. Prezentowana powyżej interaktywna mapa Krakowa bazuje na najnowszych ortofotomapach o bardzo wysokiej rozdzielczości (GSD 5 cm). Aby system działał na nich precyzyjnie, konieczne było analityczne wyznaczenie optymalnego punktu pracy modelu specjalnie pod tę jakość obrazu.',
+          },
+          {
+            text: 'Wykorzystano do tego autorski zbiór walidacyjny wycięty z tych samych danych. Na jego podstawie wygenerowano krzywą miary F1 w funkcji pewności (Confidence). Jak wynika z wykresu, maksymalny balans pomiędzy czułością a precyzją (F1 = 0,93) osiągnięto przy progu odcięcia wynoszącym 0,136. Taka precyzyjna kalibracja pozwoliła w pełni wykorzystać bogactwo detali 5-centymetrowego rastra – model wyłapuje niemal wszystkie pojazdy, jednocześnie bezbłędnie odcinając szum wizualny i minimalizując liczbę fałszywych alarmów (False Positives).',
+          },
+        ],
+        figure: {
+          src: '/assets/BoxF1_curve_2025val.png',
+          alt: 'Krzywa F1-Confidence dla walidacji na ortofotomapie Krakowa GSD 5 cm',
+          caption: 'Krzywa F1-Confidence dla GSD 5 cm — optymalny próg pewności 0,136 na autorskim zbiorze walidacyjnym z ortofotomapy 2025.',
+          maxWidth: '35rem',
         },
       },
     ],
