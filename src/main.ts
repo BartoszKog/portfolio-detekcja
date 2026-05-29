@@ -3,12 +3,14 @@ import { MapController } from './map/MapController';
 import { revealApp } from './ui/setupAppLoader';
 import { setupEngineeringBlocks } from './ui/setupEngineeringBlocks';
 import { setupHero } from './ui/setupHero';
+import { setupTableOfContents } from './ui/setupTableOfContents';
 import { setupLegend } from './ui/Legend';
 import { setupLayerToggle } from './ui/LayerToggle';
 import { setupScaleLine } from './ui/ScaleLine';
 
 setupHero();
 setupEngineeringBlocks();
+setupTableOfContents();
 revealApp();
 
 /**

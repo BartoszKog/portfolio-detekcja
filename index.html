@@ -111,9 +111,22 @@
         </div>
       </section>
 
+      <div id="page-toc-slot">
+        <nav id="page-toc" class="page-toc" aria-label="Spis treści">
+          <div id="page-toc-inline-shell" class="page-container pb-6 pt-2">
+            <div class="content-width">
+              <div class="page-toc-panel">
+                <p class="page-toc-heading">Spis treści</p>
+                <ol id="page-toc-list" class="page-toc-list"></ol>
+              </div>
+            </div>
+          </div>
+        </nav>
+      </div>
+
       <div class="page-container">
         <div class="content-width space-y-8 lg:space-y-10">
-          <section id="map-section" class="scroll-mt-6">
+          <section id="map-section" class="scroll-mt-24">
             <header class="map-section-intro">
               <div class="mb-8">
                 <h2 class="text-3xl font-bold text-slate-800 tracking-tight mb-4">
@@ -345,7 +358,7 @@
             </div>
           </section>
 
-          <section class="py-8 pb-12">
+          <section id="engineering-section" class="scroll-mt-24 py-8 pb-12">
             <h2 class="text-3xl font-bold mb-6 border-b pb-2">Rozwiązanie Inżynierskie i Wyniki</h2>
             <div id="results-content" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
             <div id="engineering-blocks" class="mt-6 space-y-6"></div>

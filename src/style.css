@@ -159,6 +159,105 @@ body {
       transparent 100%
     );
   }
+
+  .page-toc-panel {
+    @apply p-0;
+  }
+
+  .page-toc-heading {
+    @apply mb-4 text-xs font-bold uppercase tracking-[0.14em] text-slate-500;
+  }
+
+  .page-toc-list {
+    @apply m-0 grid list-none grid-cols-1 gap-x-8 gap-y-1 p-0 sm:grid-cols-2;
+  }
+
+  .page-toc-sublist {
+    @apply m-0 mt-2 list-none space-y-1 border-l border-slate-200 pl-3;
+  }
+
+  .page-toc-item--top + .page-toc-item--top {
+    @apply mt-4 border-t border-slate-100 pt-4 sm:col-span-2;
+  }
+
+  .page-toc-link {
+    @apply block rounded-md py-1 text-sm leading-snug text-slate-600 transition hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2;
+  }
+
+  .page-toc-link--top {
+    @apply text-base font-semibold text-slate-800;
+  }
+
+  .page-toc-link--section {
+    @apply font-medium text-slate-700;
+  }
+
+  .page-toc-link--subsection {
+    @apply text-xs text-slate-500;
+  }
+
+  .page-toc-link--active {
+    @apply text-indigo-700;
+  }
+
+  .page-toc-link--top.page-toc-link--active {
+    @apply text-indigo-800;
+  }
+
+  .page-toc-slot--margin-mode {
+    @apply m-0 h-0 overflow-hidden p-0;
+  }
+
+  .page-toc--hidden {
+    @apply invisible pointer-events-none opacity-0;
+  }
+
+  .page-toc--docked {
+    position: fixed;
+    top: 50%;
+    left: var(--page-toc-dock-left, 1rem);
+    z-index: 40;
+    width: 13.75rem;
+    max-height: calc(100svh - 3rem);
+    overflow: auto;
+    padding-right: 0.25rem;
+    pointer-events: auto;
+    transform: translateY(-50%);
+  }
+
+  .page-toc--docked .page-toc-panel {
+    @apply p-0;
+  }
+
+  .page-toc--docked .page-toc-list {
+    @apply grid-cols-1 gap-y-0.5;
+  }
+
+  .page-toc--docked .page-toc-item--top + .page-toc-item--top {
+    @apply mt-3 border-t border-slate-100 pt-3 sm:col-span-1;
+  }
+
+  .page-toc--docked .page-toc-link--top {
+    @apply text-sm;
+  }
+
+  .page-toc--docked .page-toc-inline-shell,
+  .page-toc--docked .page-container,
+  .page-toc--docked .content-width {
+    @apply w-full max-w-none p-0;
+  }
+
+  .page-toc--docked .page-toc-sublist {
+    @apply pl-2.5;
+  }
+
+  .page-toc--docked .page-toc-sublist--collapsible {
+    display: none;
+  }
+
+  .page-toc--docked .page-toc-item--branch-active > .page-toc-sublist--collapsible {
+    display: block;
+  }
 }
 
 #map {
