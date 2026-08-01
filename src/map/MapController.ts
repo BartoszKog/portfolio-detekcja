@@ -272,7 +272,7 @@ function createOrthophotoLayer(config: OrthoLayerConfig): TileLayer<WMTS> {
       tileGrid: msipTileGrid,
       style: 'default',
       requestEncoding: 'KVP',
-      crossOrigin: 'anonymous',
+      // crossOrigin: 'anonymous',
       attributions: MSIP_ATTRIBUTION,
       wrapX: false,
       transition: 0,
