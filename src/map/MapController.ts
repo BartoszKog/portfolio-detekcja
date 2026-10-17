@@ -108,6 +108,7 @@ const DETECTION_LAYER_CONFIGS: readonly DetectionLayerConfig[] = [
   },
 ] as const;
 
+const CARTO_BASEMAP_TILE_URL = './tiles/carto/{z}/{x}/{y}.png';
 const DIFF_HEATMAP_TILE_URL = './tiles/diff_2025_2023/{z}/{x}/{y}.png';
 const DIFF_HEATMAP_Z_INDEX = 5;
 const DENSITY_TILE_URLS: Record<OrthoYear, string> = {
@@ -223,10 +224,10 @@ function setupMapResizeHandling(map: Map, container: string | HTMLElement): void
 function createBasemapLayer(): TileLayer<XYZ> {
   return new TileLayer({
     source: new XYZ({
-      url: 'https://{a-c}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}.png',
+      url: CARTO_BASEMAP_TILE_URL,
       attributions: CARTO_ATTRIBUTION,
       crossOrigin: 'anonymous',
-      maxZoom: 20,
+      maxZoom: 18,
     }),
   });
 }
